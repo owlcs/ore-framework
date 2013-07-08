@@ -1,6 +1,6 @@
-# Using the ORE-2013 Benchmark Framework
+# Using the framework
 
-The framework comes with a shell script, *execExamples*, that triggers all but the query answering tasks on the supplied Pizza ontology (*test/pizza.owl*). These are executed using the example reasoner wrapper *execReasoner*, which uses JFact.
+The benchmark framework comes with a shell script, *execExamples*, that triggers all but the query answering tasks on the supplied Pizza ontology (*test/pizza.owl*). These are executed using the example reasoner wrapper *execReasoner*, which uses JFact.
 
 The *InputVerifier* JAR can be build using Ant via *build-input.xml* ('ant -buildfile build-input.xml'). It is used to verify whether the given parameters are valid (e.g., whether the concept name occurs in the ontology signature).
 
@@ -10,9 +10,9 @@ Participants should either create or alter the *execReasoner* script according t
 
 **Using the start script:**
 
-* sh start <Operation> <OntologyFile> <Output> (<ConceptURI> | <QueryFile>)
-    * <Operation>		One of: sat | classification | consistency | query
-    * <OntologyFile>		Absolute ontology file path
-    * <Output>		Output file path
-    * <ConceptURI>		Concept URI, as declared in the ontology
-    * <QueryFile>		Absolute query file path
+* sh start `[Operation]` `[OntologyFile]` `[Output]` (`[ConceptURI]` | `[QueryFile]`)
+    * `[Operation]`		One of: sat | classification | consistency | query
+    * `[OntologyFile]`		Absolute ontology file path
+    * `[Output]`		Output file path
+    * `[ConceptURI]`		Concept URI, as declared in the ontology
+    * `[QueryFile]`		Absolute query file path
