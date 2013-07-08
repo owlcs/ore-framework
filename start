@@ -5,13 +5,19 @@
 # Last updated: 27-Jun-13
 # 
 # To test your system you should alter the 'execReasoner' script according to your system
+#
+# Base folders: reasoner, ontologies, and runner scripts (change these appropriately)
+# 
+rbase="/Users/rafa/Documents/PhD/ORE/reasoners/"
+ontbase="/Users/rafa/Documents/PhD/ORE/ontologies/"
+runbase="/Users/rafa/Documents/PhD/ORE/runner/"
 # 
 # Using the script:
 # sh start <Operation> <OntPath> <Output> <Reasoner> (<ConceptURI> | <QueryFile>)
 # 	<Operation>		One of: sat | classification | consistency | query
 # 	<OntologyFile>		Absolute ontology file path
 #	<Output>		Output file path
-# 	<Reasoner>		Reasoner folder name (rooted at ../reasoners) which should contain an 'execReasoner' script
+# 	<Reasoner>		Reasoner folder name (rooted at rbase above) which should contain an 'execReasoner' script
 # 		ORE-2013 reasoners: basevisor | elephant | elk | fact | hermit | jcel | jfact | konclude | more-hermit | more-pellet | snorocket | treasoner | trowl | wsclassifier
 # 	<ConceptURI>		Concept URI, as declared in the ontology
 # 	<QueryFile>		Absolute query file path
@@ -37,10 +43,10 @@ if [ $# -gt 1 ]; then
 	# 2) Operation is one of the specified ones
 	# 3) Concept exists in the ontology signature
 	# 
-# 	echo "Verifying parameters..."
-# 	chk=$(java -jar InputVerifier.jar $1 $2 $3 $5)
-# 	if [ "$chk" = "Valid parameters" ]; then
-# 		echo "	Parameters are valid"
+	echo "Verifying parameters..."
+	chk=$(java -jar InputVerifier.jar $1 $2 $3 $5)
+	if [ "$chk" = "Valid parameters" ]; then
+		echo "	Parameters are valid"
 		#
 		# Restrict system resources
 		# Max memory: 9GB
@@ -52,7 +58,6 @@ if [ $# -gt 1 ]; then
 		# Execute reasoner with given parameters. Once the operation
 		# is completed, the wall clock time difference is printed
 		# 
-		rbase="/Users/rafa/Documents/PhD/ORE/reasoners/"
 		echo "Executing reasoner..."
 		cd "$rbase/$4"
 		start_time=`date +%s`
@@ -63,16 +68,15 @@ if [ $# -gt 1 ]; then
 		echo "$rout"
 		echo "$output" > "$3_log"
 		echo "Finished. Total wall clock duration: $duration second(s)"
-		echo ""
 		# 		
 		# Handle output
 		# 
 		echo "Verifying output..."
-		cd ../../runner
-		java -jar OutputHandler.jar "$rbase/$4/$3_log" $1 $2 $3 $4 $5
-	# else
-# 		echo "$chk"
-# 	fi
+		cd "$runbase" && java -jar OutputHandler.jar "$rbase/$4/$3_log" $1 $2 $3 $4 $5
+		echo ""
+	else
+		echo "$chk"
+	fi
 else
 	echo "! Insufficient or no parameters given"
 	echo ""
