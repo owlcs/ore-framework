@@ -8,9 +8,9 @@
 #
 # Base folders: reasoner, ontologies, and runner scripts (change these appropriately)
 # 
-rbase="/Users/rafa/Documents/PhD/ORE/reasoners/"
-ontbase="/Users/rafa/Documents/PhD/ORE/ontologies/"
-runbase="/Users/rafa/Documents/PhD/ORE/runner/"
+rbase="ORE/reasoners/"
+ontbase="ORE/ontologies/"
+runbase="ORE/runner/"
 # 
 # Using the script:
 # sh start <Operation> <OntPath> <Output> <Reasoner> (<ConceptURI> | <QueryFile>)
