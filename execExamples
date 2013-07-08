@@ -1,0 +1,16 @@
+#!/bin/bash
+# 
+# OWL Reasoner Evaluation Workshop (ORE) 2013
+# Examples of using the framework
+# Last updated: 26-Apr-13
+# 
+
+# Check consistency
+sh start consistency test/pizza.owl test/output/pizza-consistency.csv
+
+# Classify ontology
+sh start classification test/pizza.owl test/output/pizza-classification.owl
+
+# Check satisfiability of concept names
+sh start sat test/pizza.owl test/output/pizza-sat.csv http://www.co-ode.org/ontologies/pizza/pizza.owl#SloppyGiuseppe
+sh start sat test/pizza.owl test/output/pizza-sat.csv http://www.co-ode.org/ontologies/pizza/pizza.owl#IceCream

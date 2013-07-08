@@ -1,0 +1,51 @@
+<project default="jar">
+
+    <property name="lib" location="lib"/>
+    <property name="runner" value="uk.ac.manchester.cs.ore.InputVerifier"/>
+    <property name="build" value="build"/>
+    <property name="src" location="src"/>
+
+    <path id="project.class.path">
+        <fileset dir="lib">
+            <include name="**/*.jar"/>
+        </fileset>
+    </path>
+
+    <target name="clean" description="Cleaning up build files...">
+        <delete dir="${build}"/>
+    </target>
+
+    <target name="compile" description="Compile source files" depends="clean">
+        <mkdir dir="${build}"/>
+        <javac srcdir="${src}" destdir="${build}" debug="yes" deprecation="yes" includeantruntime="false">
+            <classpath refid="project.class.path"/>
+        </javac>
+
+        <copy todir="${build}">
+            <fileset dir="${src}">
+                <exclude name="**/*.java"/>
+            </fileset>
+        </copy>
+
+    </target>
+
+    <target name="jar" depends="compile">
+        <pathconvert dirsep="/" pathsep=" " property="Class-Path">
+            <map from="${lib}/" to="./lib/"/>
+            <map from="${lib}\" to="./lib/"/>
+            <path>
+                <fileset dir="lib">
+                    <include name="**/*.jar"/>
+                </fileset>
+            </path>
+        </pathconvert>
+
+        <jar jarfile="InputVerifier.jar" basedir="${build}">
+            <manifest>
+                <attribute name="Class-Path" value="${Class-Path}"/>
+                <attribute name="Main-Class" value="${runner}"/>
+            </manifest>
+        </jar>
+    </target>
+
+</project>

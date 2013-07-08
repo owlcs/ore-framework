@@ -1,0 +1,87 @@
+#!/bin/bash
+# 
+# OWL Reasoner Evaluation Workshop (ORE) 2013
+# Reasoner Competition Benchmark Script v1.4
+# Last updated: 27-Jun-13
+# 
+# To test your system you should alter the 'execReasoner' script according to your system
+# 
+# Using the script:
+# sh start <Operation> <OntPath> <Output> <Reasoner> (<ConceptURI> | <QueryFile>)
+# 	<Operation>		One of: sat | classification | consistency | query
+# 	<OntologyFile>		Absolute ontology file path
+#	<Output>		Output file path
+# 	<Reasoner>		Reasoner folder name (rooted at ../reasoners) which should contain an 'execReasoner' script
+# 		ORE-2013 reasoners: basevisor | elephant | elk | fact | hermit | jcel | jfact | konclude | more-hermit | more-pellet | snorocket | treasoner | trowl | wsclassifier
+# 	<ConceptURI>		Concept URI, as declared in the ontology
+# 	<QueryFile>		Absolute query file path
+# 
+# To start with, print the parameters back as they are parsed
+# 
+if [ $# -gt 1 ]; then
+	echo "$# parameters given: $*"
+	echo "	Operation: $1"
+	echo "	Ontology Filepath: $2"
+    echo "	Output Filepath: $3"
+    echo "	Reasoner: $4"
+	if [ $# -gt 4 ]; then
+		if [ "$1" = "sat" ]; then
+			echo "	Concept URI: $5"
+		elif [ "$1" = "query" ]; then
+			echo "	Query Filepath: $5"
+		fi
+	fi
+	# 	
+	# Validate the parameters, i.e., whether:
+	# 1) Given (ontology and/or query) files exist
+	# 2) Operation is one of the specified ones
+	# 3) Concept exists in the ontology signature
+	# 
+# 	echo "Verifying parameters..."
+# 	chk=$(java -jar InputVerifier.jar $1 $2 $3 $5)
+# 	if [ "$chk" = "Valid parameters" ]; then
+# 		echo "	Parameters are valid"
+		#
+		# Restrict system resources
+		# Max memory: 9GB
+		# Max time: 7 minutes (5 minute timeout + 2 minutes allowance)
+		#
+		ulimit -v 9961472
+		ulimit -t 420
+		# 
+		# Execute reasoner with given parameters. Once the operation
+		# is completed, the wall clock time difference is printed
+		# 
+		rbase="/Users/rafa/Documents/PhD/ORE/reasoners/"
+		echo "Executing reasoner..."
+		cd "$rbase/$4"
+		start_time=`date +%s`
+		rout=$(./execReasoner $1 $2 $3 $5)
+		end_time=`date +%s`
+		duration=`expr $end_time - $start_time`
+		output="$rout \nDuration: $duration"
+		echo "$rout"
+		echo "$output" > "$3_log"
+		echo "Finished. Total wall clock duration: $duration second(s)"
+		echo ""
+		# 		
+		# Handle output
+		# 
+		echo "Verifying output..."
+		cd ../../runner
+		java -jar OutputHandler.jar "$rbase/$4/$3_log" $1 $2 $3 $4 $5
+	# else
+# 		echo "$chk"
+# 	fi
+else
+	echo "! Insufficient or no parameters given"
+	echo ""
+	echo "Usage:	sh start <Operation> <OntPath> <Output> <Reasoner> (<ConceptURI> | <QueryFile>)"
+	echo "	<Operation>	One of: sat | classification | consistency | query"
+	echo "	<OntologyFile>	Ontology file path"
+	echo "	<Output>	Output file path"
+	echo "	<Reasoner>	Reasoner folder name (rooted at ../reasoners) which should contain an 'execReasoner' script"
+	echo "	<ConceptURI>	Concept URI, as declared in the ontology"
+	echo "	<QueryFile>	Absolute query file path"
+	echo ""
+fi
