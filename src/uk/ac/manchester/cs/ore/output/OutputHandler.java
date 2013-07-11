@@ -6,14 +6,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.StringTokenizer;
 
-import org.semanticweb.owlapi.apibinding.OWLManager;
-import org.semanticweb.owlapi.model.OWLOntology;
-import org.semanticweb.owlapi.model.OWLOntologyCreationException;
-import org.semanticweb.owlapi.model.OWLOntologyManager;
-
-import uk.ac.manchester.cs.diff.axiom.LogicalDiff;
-import uk.ac.manchester.cs.diff.axiom.StructuralDiff;
-
 /**
  * @author Rafael S. Goncalves <br/>
  * Information Management Group (IMG) <br/>
@@ -63,54 +55,24 @@ public class OutputHandler {
 	
 	
 	/**
-	 * Verify whether the given output is the correct one w.r.t. a base file
-	 * @param opName	Operation name
-	 * @param resultFile	Results file
-	 * @param baseFile	Base file
-	 * @return true if the result is correct, false otherwise
+	 * Parse error file and return a curated string with the error
+	 * @param errorFile	Error file
+	 * @return String with the error, stripped of commas (for proper CSV consumption)
+	 * @throws IOException
 	 */
-	public boolean isResultCorrect(String opName, File resultFile, File baseFile) {
-		boolean isCorrect = true;
-		
-		if(opName.equalsIgnoreCase("classification"))
-			isCorrect = isEquivalent(resultFile, baseFile);
-		else if(opName.equalsIgnoreCase("sat"))
-			throw new RuntimeException("NOT IMPLEMENTED");
-		else if(opName.equalsIgnoreCase("consistency"))
-			throw new RuntimeException("NOT IMPLEMENTED");
-		
-		return isCorrect;
-	}
-	
-	
-	/**
-	 * Verify whether two ontology files are equivalent, first w.r.t. structural diff and,
-	 * subsequently, because of the equivalent vs dual subsumptions issue, logical diff
-	 * @param resultFile	Results file
-	 * @param baseFile	Base file
-	 * @return true if ontologies are logically equivalent
-	 */
-	private boolean isEquivalent(File resultFile, File baseFile) {
-		boolean isEquivalent = true;
-		OWLOntologyManager man = OWLManager.createOWLOntologyManager();
-		try {
-			OWLOntology result = man.loadOntologyFromOntologyDocument(resultFile);
-			OWLOntology base = man.loadOntologyFromOntologyDocument(baseFile);
-			
-			StructuralDiff sdiff = new StructuralDiff(result, base, false);
-			isEquivalent = sdiff.isEquivalent();
-			
-			if(!isEquivalent) {
-				LogicalDiff ldiff = new LogicalDiff(result, base, false);
-				isEquivalent = ldiff.isEquivalent();
-			}
-		} catch (OWLOntologyCreationException e) {
-			isEquivalent = false;
-			e.printStackTrace();
+	public String parseErrorFile(File errorFile) throws IOException {
+		BufferedReader reader = new BufferedReader(new FileReader(errorFile));
+		String output = "";
+		String line = reader.readLine();
+		while(line != null) {
+			line = line.replaceAll(",", ";");
+			output += line + " ";
+			line = reader.readLine();
 		}
-		return isEquivalent;
+		reader.close();
+		return output;
 	}
-	
+		
 	
 	/**
 	 * Main
@@ -118,38 +80,38 @@ public class OutputHandler {
 	 * @param 1: operation name
 	 * @param 2: ontology name
 	 * @param 3: result file
-	 * @param 4: reasoner name
-	 * @param 5: concept uri
+	 * @param 4: base result file
+	 * @param 5: reasoner name
+	 * @param 6: concept uri
 	 * @throws IOException 
 	 */
 	public static void main(String[] args) throws IOException {
-		String output = "";
+		String row = "";
 		OutputHandler handler = new OutputHandler();
 		
 		// Ontology filename
 		File ontFile= new File(args[2]);
 		String ontName = ontFile.getName();
 		System.out.println("\tOntology name: " + ontName);
-		output += ontName + ",";
+		row += ontName + ",";
 		
 		// Read in reasoner output
 		File f = new File(args[0]);
 		System.out.println("\tReasoner output: " + f.getAbsolutePath());
-		output += handler.parseFile(f);
+		row += handler.parseFile(f);
 		
 		// Operation name
 		String opName = args[1];
 		System.out.println("\tOperation name: " + opName);
 		
-		// Results file
-		File resultFile = new File(args[3]);
-		if(resultFile.exists())
-			System.out.println("\tResult file: " + resultFile.getAbsolutePath());
-		
 		// Error file
 		File errorFile = new File(args[3] + "_err");
-		if(errorFile.exists())
+		if(errorFile.exists()) {
 			System.out.println("\tError file: " + errorFile.getAbsolutePath());
+			String error = handler.parseErrorFile(errorFile);
+			if(!error.isEmpty())
+				row += error;
+		}
 		
 		// Reasoner name
 		String reasonerName = args[4];
@@ -161,6 +123,6 @@ public class OutputHandler {
 			System.out.println("\tConcept URI: " + conceptUri);
 		}
 		
-		System.out.println("CSV output: " + output);
+		System.out.println("CSV output: " + row);
 	}
 }

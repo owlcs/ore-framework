@@ -1,6 +1,7 @@
 package uk.ac.manchester.cs.ore;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -22,10 +23,12 @@ import org.semanticweb.owlapi.util.VersionInfo;
 public class InputVerifier {
 	private OWLOntology ont;
 	
-	public InputVerifier() {}
+	public InputVerifier(){}
 	
-	/*
+	/**
 	 * Check whether the given operation is a valid one
+	 * @param op	operation name
+	 * @return true if operation is valid, false otherwise
 	 */
 	public boolean isValidOperation(String op) {
 		boolean isValid = false;
@@ -42,8 +45,10 @@ public class InputVerifier {
 	}
 	
 	
-	/*
+	/**
 	 * Check whether the given ontology file path is a parseable ontology
+	 * @param ontFile	Ontology file
+	 * @return true if ontology is parseable, false otherwise
 	 */
 	public boolean isParseable(String ontFile) {
 		boolean isParseable = false; 
@@ -64,8 +69,10 @@ public class InputVerifier {
 	}
 	
 	
-	/*
+	/**
 	 * Check whether the given concept URI exists in the ontology signature
+	 * @param cName	Concept name
+	 * @return true if concept exists in the ontology, false otherwise
 	 */
 	public boolean isValidConceptName(String cName) {
 		boolean isValid = false;
@@ -79,44 +86,73 @@ public class InputVerifier {
 	}
 	
 	
-	/*
+	/**
+	 * Determine the output file exists (if not create it) and is writable (if not, make it so)
+	 * @param outFile	Output file
+	 * @return true if output file is writable, false otherwise 
+	 */
+	public boolean isWritable(String outFile) {
+		File f = new File(outFile);
+		if(!f.exists()) {
+			try { f.createNewFile(); } 
+			catch (IOException e) { e.printStackTrace(); }
+		}
+		if(!f.canWrite()) f.setWritable(true);
+		return f.canWrite();
+	}
+	
+	
+	/**
 	 * Main
+	 * @param 0: operation name
+	 * @param 1: ontology file path
+	 * @param 2: output file path
+	 * @param 3: reasoner name
+	 * @param 4: [where applicable] concept URI or query file path
 	 */
 	public static void main(String[] args) {		
-		if(!(args.length >= 3)) {
+		if(!(args.length >= 4)) {
 			System.err.println("\tEmpty or incomplete argument list. Arguments must be: <Operation> <OntologyFile> <Output> (<Concept> | <QueryFile>)");
 			System.exit(0);
 		}
 		
-		String operation = args[0]; String ontFile = args[1];
+		String operation = args[0], ontFile = args[1], outputFile = args[2];
 		InputVerifier iv = new InputVerifier();
 		
 		boolean isValidOp = iv.isValidOperation(operation);
-		if(!isValidOp) System.exit(0);
+		if(!isValidOp) {
+			System.err.println("! Invalid operation: " + operation);
+			System.exit(0);
+		}
 		
 		boolean isParseable = iv.isParseable(ontFile);
-		if(!isParseable) System.exit(0);
+		if(!isParseable) {
+			System.err.println("! Unable to parse given file: " + ontFile);
+			System.exit(0);
+		}
+		
+		boolean isWriteable = iv.isWritable(outputFile);
+		if(!isWriteable) System.err.println("! Cannot write to file: " + outputFile);
 		
 		// Consistency and classification
-		if((operation.equalsIgnoreCase("classification") || operation.equalsIgnoreCase("consistency")) && args.length == 3)
+		if((operation.equalsIgnoreCase("classification") || operation.equalsIgnoreCase("consistency")) && args.length == 4)
 			System.out.println("Valid parameters");
-
+		
 		// Satisfiability
 		else if(operation.equalsIgnoreCase("sat")) {
-			if(args.length < 4) System.err.println("\tA concept name URI is required for satisfiability testing");
+			if(args.length < 5) System.err.println("\tA concept name URI is required for satisfiability testing");
 			else {
-				String cName = args[3];
+				String cName = args[4];
 				boolean isValidConceptURI = iv.isValidConceptName(cName);
-				if(isValidConceptURI)
-					System.out.println("Valid parameters");
+				if(isValidConceptURI) System.out.println("Valid parameters");
 			}
 		}
-
+		
 		// Query answering
 		else if(operation.equalsIgnoreCase("query")) {
-			if(args.length < 4) System.err.println("\tThe query file has not been specified");
+			if(args.length < 5) System.err.println("\tThe query file has not been specified");
 			else {
-				if(!new File(args[3]).isFile()) System.err.println("\tThe given query filepath '" + args[3] + "' does not point to a valid file");
+				if(!new File(args[4]).isFile()) System.err.println("\tThe given query filepath '" + args[4] + "' does not point to a valid file");
 				else System.out.println("Valid parameters");
 			}
 		}
