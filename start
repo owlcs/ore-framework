@@ -2,7 +2,7 @@
 # 
 # OWL Reasoner Evaluation Workshop (ORE) 2013
 # Reasoner Competition Benchmark Script v1.5
-# Last updated: 8-Jul-13
+# Last updated: 12-Jul-13
 # 
 # To test your system you should alter the 'execReasoner' script according to your system
 #
@@ -16,7 +16,7 @@ runbase="/Users/rafa/Documents/PhD/ORE/runner/"
 # sh start <Operation> <OntPath> <Output> <Reasoner> (<ConceptURI> | <QueryFile>)
 # 	<Operation>		One of: sat | classification | consistency | query
 # 	<OntologyFile>		Absolute ontology file path
-#	<Output>		Output file path
+#	<Output>		Output folder path
 # 	<Reasoner>		Reasoner folder name (rooted at rbase above) which should contain an 'execReasoner' script
 # 		ORE-2013 reasoners: basevisor | elephant | elk | fact | hermit | jcel | jfact | konclude | more-hermit | more-pellet | snorocket | treasoner | trowl | wsclassifier
 # 	<ConceptURI>		Concept URI, as declared in the ontology
@@ -28,7 +28,6 @@ if [ $# -gt 1 ]; then
 	echo "$# parameters given: $*"
 	echo "	Operation: $1"
 	echo "	Ontology Filepath: $2"
-    echo "	Output Filepath: $3"
     echo "	Reasoner: $4"
 	if [ $# -gt 4 ]; then
 		if [ "$1" = "sat" ]; then
@@ -37,6 +36,14 @@ if [ $# -gt 1 ]; then
 			echo "	Query Filepath: $5"
 		fi
 	fi
+	ontname=`basename $2`
+	out="$3/$4_-_$1_-_$ontname"
+	if [ "$1" = "sat" -o "$1" = "consistency" ]; then
+		out="$out.csv"
+	elif [ "$1" = "classification" ]; then
+		out="$out.owl"
+	fi
+    echo "	Output Folder: $out"
 	# 	
 	# Validate the parameters, i.e., whether:
 	# 1) Given (ontology and/or query) files exist
@@ -44,7 +51,7 @@ if [ $# -gt 1 ]; then
 	# 3) Concept exists in the ontology signature
 	# 
 	echo "Verifying parameters..."
-	chk=$(java -jar InputVerifier.jar $1 $2 $3 $5)
+	chk=$(java -jar InputVerifier.jar $1 $2 $out $5)
 	if [ "$chk" = "Valid parameters" ]; then
 		echo "	Parameters are valid"
 		#
@@ -61,19 +68,19 @@ if [ $# -gt 1 ]; then
 		echo "Executing reasoner..."
 		cd "$rbase/$4"
 		start_time=`date +%s`
-		rout=$(./execReasoner $1 $2 $3 $5)
+		rout=$(./execReasoner $1 $2 $out $5)
 		end_time=`date +%s`
 		duration=`expr $end_time - $start_time`
 		output="$rout \nDuration: $duration"
 		echo "$rout"
-		echo "$output" > "$3_log"
+		echo "$output" > $out"_log"
 		echo "Finished. Total wall clock duration: $duration second(s)"
 		# 		
 		# Handle output
 		# 
 		echo "Verifying output..."
-		cd "$runbase" && java -jar OutputHandler.jar "$rbase/$4/$3_log" $1 $2 $3 $4 $5
-		echo ""
+		cd "$runbase" && java -jar OutputHandler.jar "$rbase/$4/"$out"_log" $1 $2 $out $4 $5
+		echo "Done"
 	else
 		echo "$chk"
 	fi
