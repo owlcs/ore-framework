@@ -1,0 +1,33 @@
+#!/bin/bash
+# 
+# OWL Reasoner Evaluation Workshop (ORE) 2013
+# Last updated: 13-Jul-13
+# 
+# Base folder(s) for ontologies and runners (change these appropriately)
+# 
+base="/Users/rafa/Documents/PhD/ORE"
+ontbase="$base/corpus"
+runbase="$base/runner"
+sampleSize="10"
+set="set_a"
+#
+# Process DL ontologies
+#
+for f in $ontbase/$set/dl/*
+do
+	java -Xmx8G -jar $runbase/SATSampler.jar $f $ontbase/sat/ $sampleSize
+done
+#
+# Process EL ontologies
+#
+for f in $ontbase/$set/el/*
+do
+	java -Xmx8G -jar $runbase/SATSampler.jar $f $ontbase/sat/ $sampleSize
+done
+#
+# Process RL ontologies
+#
+for f in $ontbase/$set/rl/*
+do
+	java -Xmx8G -jar $runbase/SATSampler.jar $f $ontbase/sat/ $sampleSize
+done
