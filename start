@@ -2,25 +2,28 @@
 # 
 # OWL Reasoner Evaluation Workshop (ORE) 2013
 # Reasoner Competition Benchmark Script v1.5
-# Last updated: 12-Jul-13
+# Last updated: 13-Jul-13
 # 
-# To test your system you should alter the 'execReasoner' script according to your system
-#
-# Base folders: reasoner, ontologies, and runner scripts (change these appropriately)
+# Base folder(s): reasoner, ontologies, and runner scripts (change these appropriately)
 # 
-rbase="/Users/rafa/Documents/PhD/ORE/reasoners/"
-ontbase="/Users/rafa/Documents/PhD/ORE/ontologies/"
-runbase="/Users/rafa/Documents/PhD/ORE/runner/"
+base="/Users/rafa/Documents/PhD/ORE"
+#base="/shareddata/homes/samantha"
+rbase="$base/reasoners"
+ontbase="$base/ontologies"
+runbase="$base/runner"
 # 
 # Using the script:
-# sh start <Operation> <OntPath> <Output> <Reasoner> (<ConceptURI> | <QueryFile>)
-# 	<Operation>		One of: sat | classification | consistency | query
-# 	<OntologyFile>		Absolute ontology file path
+#
+# sh start <Operation> <OntPath> <Output> <Reasoner> (<ConceptURI>)
+#
+# 	<Operation>		One of: sat | classification | consistency
+# 	<OntologyFile>	Absolute ontology file path
 #	<Output>		Output folder path
 # 	<Reasoner>		Reasoner folder name (rooted at rbase above) which should contain an 'execReasoner' script
-# 		ORE-2013 reasoners: basevisor | elephant | elk | fact | hermit | jcel | jfact | konclude | more-hermit | more-pellet | snorocket | treasoner | trowl | wsclassifier
-# 	<ConceptURI>		Concept URI, as declared in the ontology
-# 	<QueryFile>		Absolute query file path
+# 	<ConceptURI>	Full concept URI, as declared in the ontology
+#
+# ORE-2013 reasoners: basevisor, elephant, elk, fact, hermit, jcel, jfact, konclude, 
+# more-hermit, more-pellet, snorocket, treasoner, trowl, wsclassifier
 # 
 # To start with, print the parameters back as they are parsed
 # 
@@ -37,13 +40,13 @@ if [ $# -gt 1 ]; then
 		fi
 	fi
 	ontname=`basename $2`
-	out="$3/$4_-_$1_-_$ontname"
+	out="$3/$ontname/$1"
 	if [ "$1" = "sat" -o "$1" = "consistency" ]; then
 		out="$out.csv"
 	elif [ "$1" = "classification" ]; then
 		out="$out.owl"
 	fi
-    echo "	Output Folder: $out"
+    echo "	Output file: $out"
 	# 	
 	# Validate the parameters, i.e., whether:
 	# 1) Given (ontology and/or query) files exist
@@ -71,15 +74,21 @@ if [ $# -gt 1 ]; then
 		rout=$(./execReasoner $1 $2 $out $5)
 		end_time=`date +%s`
 		duration=`expr $end_time - $start_time`
-		output="$rout \nDuration: $duration"
+		output="$rout \n\tDuration: $duration"
 		echo "$rout"
-		echo "$output" > $out"_log"
+		log=$out"_log"
+		if [ "$1" = "sat" ]; then
+			log=$log"_`date +%s`.txt"
+		else
+			log=$log".txt"
+		fi
+		echo "$output" > "$log"
 		echo "Finished. Total wall clock duration: $duration second(s)"
 		# 		
 		# Handle output
 		# 
 		echo "Verifying output..."
-		cd "$runbase" && java -jar OutputHandler.jar "$rbase/$4/"$out"_log" $1 $2 $out $4 $5
+		cd "$runbase" && java -jar OutputHandler.jar $rbase/$4/$log $1 $2 $out $4 $5
 		echo "Done"
 	else
 		echo "$chk"
