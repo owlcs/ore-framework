@@ -90,21 +90,27 @@ public class ConceptSampler {
 	public static void main(String[] args) throws OWLOntologyCreationException {
 		File f = new File(args[0]);
 		OWLOntologyManager man = OWLManager.createOWLOntologyManager();
-		OWLOntology ont = man.loadOntologyFromOntologyDocument(f);
-		System.out.println("Loaded ontology: " + f.getAbsolutePath());
-		
-		String outputDir = args[1];
-		if(!outputDir.endsWith(File.separator)) outputDir += File.separator;
-		
-		String parentFolder = f.getParentFile().getName();
-		if(!parentFolder.endsWith(File.separator)) parentFolder += File.separator;
-		
-		String output = outputDir + parentFolder + f.getName() + "_sat.txt";
-		System.out.println("Output to: " + output);
-		
-		int sampleSize = Integer.parseInt(args[2]);
-		ConceptSampler sampler = new ConceptSampler(ont, output, sampleSize);
-		sampler.serializeSample(sampler.getSample());
+		OWLOntology ont = null;
+		try {
+			ont = man.loadOntologyFromOntologyDocument(f);
+		} catch(OWLOntologyCreationException e) {
+			System.out.println("Unable to parse ontology: " + f.getAbsolutePath());
+		}
+		if(ont != null) {
+			System.out.println("Loaded ontology: " + f.getAbsolutePath());
+			String outputDir = args[1];
+			if(!outputDir.endsWith(File.separator)) outputDir += File.separator;
+
+			String parentFolder = f.getParentFile().getName();
+			if(!parentFolder.endsWith(File.separator)) parentFolder += File.separator;
+
+			String output = outputDir + parentFolder + f.getName() + "_sat.txt";
+			System.out.println("Output to: " + output);
+
+			int sampleSize = Integer.parseInt(args[2]);
+			ConceptSampler sampler = new ConceptSampler(ont, output, sampleSize);
+			sampler.serializeSample(sampler.getSample());
+		}
 		System.out.println("Done");
 	}
 }
