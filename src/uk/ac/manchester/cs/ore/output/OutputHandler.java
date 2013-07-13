@@ -1,8 +1,10 @@
 package uk.ac.manchester.cs.ore.output;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.StringTokenizer;
 
@@ -63,11 +65,15 @@ public class OutputHandler {
 	public String parseErrorFile(File errorFile) throws IOException {
 		BufferedReader reader = new BufferedReader(new FileReader(errorFile));
 		String output = "";
-		String line = reader.readLine();
-		while(line != null) {
-			line = line.replaceAll(",", ";");
-			output += line + " ";
-			line = reader.readLine();
+		String line = reader.readLine().trim();
+		if(line.equalsIgnoreCase("timeout"))
+			output += "timeout";
+		else {
+			while(line != null) {
+				line = line.replaceAll(",", ";");
+				output += line + " ";
+				line = reader.readLine().trim();
+			}
 		}
 		reader.close();
 		return output;
@@ -76,13 +82,11 @@ public class OutputHandler {
 	
 	/**
 	 * Main
-	 * @param 0: reasoner output
+	 * @param 0: reasoner output (log)
 	 * @param 1: operation name
 	 * @param 2: ontology name
-	 * @param 3: result file
-	 * @param 4: base result file
-	 * @param 5: reasoner name
-	 * @param 6: concept uri
+	 * @param 3: error file
+	 * @param 4: concept uri
 	 * @throws IOException 
 	 */
 	public static void main(String[] args) throws IOException {
@@ -92,37 +96,37 @@ public class OutputHandler {
 		// Ontology filename
 		File ontFile= new File(args[2]);
 		String ontName = ontFile.getName();
-		System.out.println("\tOntology name: " + ontName);
 		row += ontName + ",";
 		
-		// Read in reasoner output
+		// Read in reasoner output (log)
 		File f = new File(args[0]);
-		System.out.println("\tReasoner output: " + f.getAbsolutePath());
 		row += handler.parseFile(f);
 		
 		// Operation name
 		String opName = args[1];
-		System.out.println("\tOperation name: " + opName);
 		
 		// Error file
 		File errorFile = new File(args[3] + "_err");
 		if(errorFile.exists()) {
-			System.out.println("\tError file: " + errorFile.getAbsolutePath());
 			String error = handler.parseErrorFile(errorFile);
 			if(!error.isEmpty())
 				row += error;
 		}
-		
-		// Reasoner name
-		String reasonerName = args[4];
-		System.out.println("\tReasoner: " + reasonerName);
-		
+
 		// Concept uri
-		if(args.length > 5) {
-			String conceptUri = args[5];
-			System.out.println("\tConcept URI: " + conceptUri);
+		if(args.length > 4) {
+			String conceptUri = args[4];
+			row += conceptUri + ",";
 		}
 		
-		System.out.println("CSV output: " + row);
+		File outputDir = f.getParentFile().getParentFile();
+		String outFile = outputDir.getAbsolutePath();
+		if(!outFile.endsWith(File.separator)) outFile += File.separator;
+		outFile += "_" + opName + ".csv";
+		
+		BufferedWriter bw = new BufferedWriter(new FileWriter(new File(outFile), true));
+		bw.write(row + "\n");
+		bw.close();
+		System.out.println("\tSaved log at: " + outFile);
 	}
 }

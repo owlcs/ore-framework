@@ -94,6 +94,7 @@ public class InputVerifier {
 	public boolean isWritable(String outFile) {
 		File f = new File(outFile);
 		if(!f.exists()) {
+			f.getParentFile().mkdirs();
 			try { f.createNewFile(); } 
 			catch (IOException e) { e.printStackTrace(); }
 		}
@@ -107,11 +108,10 @@ public class InputVerifier {
 	 * @param 0: operation name
 	 * @param 1: ontology file path
 	 * @param 2: output file path
-	 * @param 3: reasoner name
-	 * @param 4: [where applicable] concept URI or query file path
+	 * @param 3: [where applicable] concept URI or query file path
 	 */
-	public static void main(String[] args) {		
-		if(!(args.length >= 4)) {
+	public static void main(String[] args) {
+		if(args.length < 3) {
 			System.err.println("\tEmpty or incomplete argument list. Arguments must be: <Operation> <OntologyFile> <Output> (<Concept> | <QueryFile>)");
 			System.exit(0);
 		}
@@ -135,25 +135,16 @@ public class InputVerifier {
 		if(!isWriteable) System.err.println("! Cannot write to file: " + outputFile);
 		
 		// Consistency and classification
-		if((operation.equalsIgnoreCase("classification") || operation.equalsIgnoreCase("consistency")) && args.length == 4)
+		if((operation.equalsIgnoreCase("classification") || operation.equalsIgnoreCase("consistency")) && args.length == 3)
 			System.out.println("Valid parameters");
 		
 		// Satisfiability
 		else if(operation.equalsIgnoreCase("sat")) {
-			if(args.length < 5) System.err.println("\tA concept name URI is required for satisfiability testing");
+			if(args.length < 4) System.err.println("\tA concept name URI is required for satisfiability testing");
 			else {
-				String cName = args[4];
+				String cName = args[3];
 				boolean isValidConceptURI = iv.isValidConceptName(cName);
 				if(isValidConceptURI) System.out.println("Valid parameters");
-			}
-		}
-		
-		// Query answering
-		else if(operation.equalsIgnoreCase("query")) {
-			if(args.length < 5) System.err.println("\tThe query file has not been specified");
-			else {
-				if(!new File(args[4]).isFile()) System.err.println("\tThe given query filepath '" + args[4] + "' does not point to a valid file");
-				else System.out.println("Valid parameters");
 			}
 		}
 	}

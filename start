@@ -40,7 +40,7 @@ if [ $# -gt 1 ]; then
 		fi
 	fi
 	ontname=`basename $2`
-	out="$3/$ontname/$1"
+	out="$rbase/$4/$3/$ontname/$1"
 	if [ "$1" = "sat" -o "$1" = "consistency" ]; then
 		out="$out.csv"
 	elif [ "$1" = "classification" ]; then
@@ -88,7 +88,7 @@ if [ $# -gt 1 ]; then
 		# Handle output
 		# 
 		echo "Verifying output..."
-		cd "$runbase" && java -jar OutputHandler.jar $rbase/$4/$log $1 $2 $out $4 $5
+		cd "$runbase" && java -jar OutputHandler.jar $log $1 $2 $out $5
 		echo "Done"
 	else
 		echo "$chk"
