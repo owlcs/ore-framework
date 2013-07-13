@@ -16,10 +16,11 @@ The main components of the framework are:
 
 usage
 --------------------
+The script that binds the various components is **start**, and can be used as follows:
 
 * sh start `[Operation]` `[Ontology]` `[Output]` `[Reasoner]` (`[ConceptURI]`)
-    * `[Operation]`		One of: sat | classification | consistency | query
+    * `[Operation]`		One of: sat | classification | consistency
     * `[Ontology]`		Absolute ontology file path
     * `[Output]`		Output folder
-    * `[Reasoner]`		Reasoner name (one of those specified in the script)
-    * `[ConceptURI]`		Concept URI, as declared in the ontology
+    * `[Reasoner]`		Reasoner name
+    * `[ConceptURI]`		Full concept URI
