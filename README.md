@@ -9,9 +9,9 @@ components
 --------------------
 The main components of the framework are:
 
-* **InputVerifier**: built using Ant via *build-input.xml* (*ant -buildfile build-input.xml*). It is used to verify whether the given parameters are valid (e.g., whether the concept name occurs in the ontology signature).
+* **InputVerifier**: built using Ant via *build-input.xml* (ant -buildfile build-input.xml). It is used to verify whether the given parameters are valid (e.g., whether the concept name occurs in the ontology signature).
 * **OutputHandler**: built using *build-output.xml*. It extrapolates from reasoner output the execution time(s), error, and timeout (where applicable) into a comma-separated file.
-* **SATSampler**: built using *build-satsampler*. It is used to extract a given number of arbitrary concept names.
+* **SATSampler**: built using *build-satsampler.xml*. It is used to extract a given number of random concept names, and can be executed via *execSatSampler* for corpus-wide sampling.
 * **JFactReasonerWrapper**: built using *build-wrapper*. This is an example reasoner wrapper for the JFact reasoner, which can be triggered by the *execReasoner* script.
 
 usage
@@ -26,7 +26,7 @@ The script that binds the various components is **start**, which can be used as 
     * `[ConceptURI]`		Full concept URI
     
     
-For corpus-wide deployment, the **startReasonerTest** (which invoked **start**) is used as follows:
+For corpus-wide deployment, the **startReasonerTest** (which invokes **start**) is used as follows:
 
 * sh startReasonerTest `[Operation]` `[Output]` `[Reasoner]` `[Profiles]`
     * `[Operation]`		One of: sat | classification | consistency
