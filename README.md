@@ -4,9 +4,9 @@ ORE 2013 Competition Framework
 #### a framework for the OWL Reasoner Evaluation (ORE) Workshop ####
 
 The competition framework can be applied to any given reasoner and set of ontologies, so long as these adhere to the [specification](http://ore2013.cs.manchester.ac.uk/competition/reasoner-submissions/) and the following folder structure: for convenience, the framework relies on a *base* folder (defined at the top of the main scripts, explained in **usage**), which is expected to contain three subfolders: 
-* **ontologies** should contain the corpus split into **dl**, **el** and **rl** subfolders, each of which containing ontology files.
+* **ontologies** should contain the corpus split into **dl**, **el** and **rl** subfolders (i.e., each OWL profile considered here), each of which containing ontology files.
 * **reasoners** should contain a folder for each reasoner, where the folder name can be used to trigger that reasoner. Each reasoner folder should contain an *execReasoner* script to execute the reasoner with the given parameters.
-* **runner** should contain all the necessary JAR files (**components** below), and the launch scripts.
+* **runner** should contain all the necessary JAR files ( **components** below), and the launch scripts.
 
 components
 --------------------
