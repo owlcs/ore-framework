@@ -16,11 +16,21 @@ The main components of the framework are:
 
 usage
 --------------------
-The script that binds the various components is **start**, and can be used as follows:
+The script that binds the various components is **start**, which can be used as follows:
 
 * sh start `[Operation]` `[Ontology]` `[Output]` `[Reasoner]` (`[ConceptURI]`)
     * `[Operation]`		One of: sat | classification | consistency
     * `[Ontology]`		Absolute ontology file path
-    * `[Output]`		Output folder
+    * `[Output]`		Output folder (within reasoner folder)
     * `[Reasoner]`		Reasoner name
     * `[ConceptURI]`		Full concept URI
+    
+    
+For corpus-wide deployment, the **startReasonerTest** (which invoked **start**) is used as follows:
+
+* sh startReasonerTest `[Operation]` `[Output]` `[Reasoner]` `[Profiles]`
+    * `[Operation]`		One of: sat | classification | consistency
+    * `[Output]`		Output folder (within reasoner folder)
+    * `[Reasoner]`		Reasoner name
+    * `[Profiles]`		Profiles to be tested, any of: dl | el | rl (space separated)
+

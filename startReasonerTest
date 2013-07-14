@@ -6,6 +6,7 @@
 base="/Users/rafa/Documents/PhD/ORE"
 #base="/shareddata/homes/samantha"
 ontbase="$base/ontologies"
+satbase="$ontbase/sat"
 # 
 # Using the script:
 #
@@ -14,7 +15,7 @@ ontbase="$base/ontologies"
 # 	<Operation>		One of: sat | classification | consistency
 #	<Output>		Output folder (within the reasoner folder)
 # 	<Reasoner>		Reasoner folder name (rooted at rbase above) which should contain an 'execReasoner' script
-# 	<Profiles>		Profiles to be tested, any of: dl | el | rl
+# 	<Profiles>		Profiles to be tested, any of: dl | el | rl (space separated)
 #
 # ORE-2013 reasoners: basevisor, elephant, elk, fact, hermit, jcel, jfact, konclude, 
 # more-hermit, more-pellet, snorocket, treasoner, trowl, wsclassifier
@@ -26,8 +27,16 @@ if [ $ELEMENTS -gt 2 ]; then
 		if [ $i -gt 2 ]; then
 			profile=${args[${i}]}
 			for file in $ontbase/$profile/*; do
-				./start $1 $file $2 $3
-				printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
+				if [ "$1" = "sat" ]; then
+					filename=`basename $file`
+					while read class; do 
+					    ./start $1 $file $2 $3 $class
+						printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
+					done < "$satbase/$profile/$filename"_sat.txt
+				else
+					./start $1 $file $2 $3
+					printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
+				fi
 			done
 		fi
 	done
@@ -38,6 +47,6 @@ else
 	echo "	<Operation>		One of: sat | classification | consistency"
 	echo "	<Output>		Output folder (within the reasoner folder)"
 	echo "	<Reasoner>		Reasoner folder name"
-	echo "	<Profiles>		Profiles to be tested, any combination of: dl | el | rl"
+	echo "	<Profiles>		Profiles to be tested, any of: dl | el | rl (space separated)"
 	echo ""
 fi
