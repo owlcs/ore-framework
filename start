@@ -28,15 +28,14 @@ runbase="$base/runner"
 # To start with, print the parameters back as they are parsed
 # 
 if [ $# -gt 1 ]; then
-	echo "$# parameters given: $*"
+	echo "Starting benchmark"
+	echo "   $# parameters given"
 	echo "	Operation: $1"
 	echo "	Ontology Filepath: $2"
     echo "	Reasoner: $4"
 	if [ $# -gt 4 ]; then
 		if [ "$1" = "sat" ]; then
 			echo "	Concept URI: $5"
-		elif [ "$1" = "query" ]; then
-			echo "	Query Filepath: $5"
 		fi
 	fi
 	ontname=`basename $2`
@@ -53,10 +52,10 @@ if [ $# -gt 1 ]; then
 	# 2) Operation is one of the specified ones
 	# 3) Concept exists in the ontology signature
 	# 
-	echo "Verifying parameters..."
+	echo "   Verifying parameters"
 	chk=$(java -jar InputVerifier.jar $1 $2 $out $5)
 	if [ "$chk" = "Valid parameters" ]; then
-		echo "	Parameters are valid"
+		echo "      Parameters are valid"
 		#
 		# Restrict system resources
 		# Max memory: 9GB
@@ -68,13 +67,13 @@ if [ $# -gt 1 ]; then
 		# Execute reasoner with given parameters. Once the operation
 		# is completed, the wall clock time difference is printed
 		# 
-		echo "Executing reasoner..."
+		echo "   Executing reasoner..."
 		cd "$rbase/$4"
 		start_time=`date +%s`
 		rout=$(./execReasoner $1 $2 $out $5)
 		end_time=`date +%s`
 		duration=`expr $end_time - $start_time`
-		output="$rout \n\tDuration: $duration"
+		output="$rout"$'\n\t'"Duration: $duration"
 		echo "$rout"
 		log=$out"_log"
 		if [ "$1" = "sat" ]; then
@@ -83,16 +82,17 @@ if [ $# -gt 1 ]; then
 			log=$log".txt"
 		fi
 		echo "$output" > "$log"
-		echo "Finished. Total wall clock duration: $duration second(s)"
+		echo "   Finished. Total wall clock duration: $duration second(s)"
 		# 		
 		# Handle output
 		# 
-		echo "Verifying output..."
+		echo "   Verifying output..."
 		cd "$runbase" && java -jar OutputHandler.jar $log $1 $2 $out $5
-		echo "Done"
+		echo "   Finished"
 	else
 		echo "$chk"
 	fi
+	echo "Done"
 else
 	echo "! Insufficient or no parameters given"
 	echo ""

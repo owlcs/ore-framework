@@ -10,24 +10,25 @@ ontbase="$base/corpus"
 runbase="$base/runner"
 sampleSize="10"
 set="set_a"
+mem="24G"
 #
 # Process DL ontologies
 #
 for f in $ontbase/$set/dl/*
 do
-	java -Xmx8G -jar $runbase/SATSampler.jar $f $ontbase/sat/ $sampleSize
+	java -Xmx"$mem" -DentityExpansionLimit=100000000 -jar $runbase/SATSampler.jar $f $ontbase/sat/ $sampleSize
 done
 #
 # Process EL ontologies
 #
 for f in $ontbase/$set/el/*
 do
-	java -Xmx8G -jar $runbase/SATSampler.jar $f $ontbase/sat/ $sampleSize
+	java -Xmx"$mem" -DentityExpansionLimit=100000000 -jar $runbase/SATSampler.jar $f $ontbase/sat/ $sampleSize
 done
 #
 # Process RL ontologies
 #
 for f in $ontbase/$set/rl/*
 do
-	java -Xmx8G -jar $runbase/SATSampler.jar $f $ontbase/sat/ $sampleSize
+	java -Xmx"$mem" -DentityExpansionLimit=100000000 -jar $runbase/SATSampler.jar $f $ontbase/sat/ $sampleSize
 done
