@@ -25,10 +25,10 @@ if [ $ELEMENTS -gt 2 ]; then
 	for (( i=0;i<$ELEMENTS;i++)); do 
 		if [ $i -gt 2 ]; then
 			profile=${args[${i}]}
-		    for file in $ontbase/$profile/*; do
-		    	./start $1 $file $2 $3
-			    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
-		    done
+			for file in $ontbase/$profile/*; do
+				./start $1 $file $2 $3
+				printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
+			done
 		fi
 	done
 else
