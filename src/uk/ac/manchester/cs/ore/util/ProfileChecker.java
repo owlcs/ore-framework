@@ -116,5 +116,6 @@ public class ProfileChecker {
 			System.out.println("\tRL: " + checker.isRL());
 			System.out.println("\tQL: " + checker.isQL());
 		}
+		System.out.println("Done");
 	}
 }

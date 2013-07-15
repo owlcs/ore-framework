@@ -7,7 +7,6 @@ import org.semanticweb.owlapi.io.OWLFunctionalSyntaxOntologyFormat;
 import org.semanticweb.owlapi.io.OWLXMLOntologyFormat;
 import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLOntology;
-import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 import org.semanticweb.owlapi.model.OWLOntologyFormat;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
 import org.semanticweb.owlapi.model.OWLOntologyStorageException;
@@ -31,8 +30,9 @@ public class SyntaxConverter {
 		OWLOntology ont = null;
 		try {
 			ont = man.loadOntologyFromOntologyDocument(f);
-			System.out.println("Loaded ontology");
-		} catch (OWLOntologyCreationException e) {
+			System.out.println("Loaded ontology: " + f.getName());
+		} catch (Exception e) {
+			System.out.println("Unable to load ontology: " + f.getAbsolutePath());
 			e.printStackTrace();
 		}
 		if(ont != null) {
@@ -41,14 +41,14 @@ public class SyntaxConverter {
 			out += f.getName();
 			
 			String syntax = args[2];
+			OWLOntologyFormat format = null;
+			if(syntax.equals("functional"))
+				format = new OWLFunctionalSyntaxOntologyFormat();
+			else if(syntax.equals("owlxml"))
+				format = new OWLXMLOntologyFormat();
+			
+			System.out.println("Chosen syntax: " + syntax + "\nSerializing to: " + out);
 			try {
-				System.out.println("Serializing...");
-				OWLOntologyFormat format = null;
-				if(syntax.equals("functional"))
-					format = new OWLFunctionalSyntaxOntologyFormat();
-				else if(syntax.equals("owlxml"))
-					format = new OWLXMLOntologyFormat();
-
 				man.saveOntology(ont, format, IRI.create("file:" + out));
 			} catch (OWLOntologyStorageException e) {
 				e.printStackTrace();
