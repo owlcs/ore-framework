@@ -3,8 +3,8 @@
 # OWL Reasoner Evaluation Workshop (ORE) 2013
 # Last updated: 14-Jul-13
 # 
-base="/Users/rafa/Documents/PhD/ORE"
-#base="/shareddata/homes/samantha"
+# base="/Volumes/Data/ORE"
+base="/shareddata/homes/samantha"
 ontbase="$base/ontologies"
 satbase="$ontbase/sat"
 # 

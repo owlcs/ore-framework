@@ -3,7 +3,9 @@ package uk.ac.manchester.cs.ore.output;
 import java.io.File;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -71,11 +73,14 @@ public class ResultComparator {
 		boolean allEquiv = true;
 		Set<File> equiv = new HashSet<File>();
 		Set<File> non_equiv = new HashSet<File>();
+		String ontName = "";
 		
 		for(int i = 0; i < files.size(); i++) {
 			File f1 = files.get(i);
-			for(int j = 1; j < files.size(); j++) {
+			if(ontName == "") ontName = f1.getParentFile().getName();
+			for(int j = (i+1); j < files.size(); j++) {
 				File f2 = files.get(j);
+				System.out.println("File 1: " + f1.getAbsolutePath() + "  VS  File 2: " + f2.getAbsolutePath());
 				ChangeSet cs = getDiff(f1, f2);
 				if(!cs.isEmpty()) {
 					allEquiv = false;
@@ -88,42 +93,67 @@ public class ResultComparator {
 						adds = ((StructuralChangeSet)cs).getAddedAxioms();
 						rems = ((StructuralChangeSet)cs).getRemovedAxioms();
 					}
-					
 					if(!rems.isEmpty()) {
-						System.out.println("File " + f1.getAbsolutePath() + " has " + rems.size() + " extra entailments:");
+						System.out.println("   File 1 has " + rems.size() + " extra entailments:");
 						for(OWLAxiom ax : rems)
 							System.out.println("\t" + getManchesterRendering(ax));
 					}
 					
 					if(!adds.isEmpty()) {
-						System.out.println("File " + f2.getAbsolutePath() + " has " + adds.size() + " extra entailments:");
+						System.out.println("   File 2 has " + adds.size() + " extra entailments:");
 						for(OWLAxiom ax : adds)
 							System.out.println("\t" + getManchesterRendering(ax));
 					}
 					
-					// Add them both to non-equivalent set. If one turns out to be Ok, it'll be handled later
+					// Add them both to non-equivalent set. If one turns out to be Ok w.r.t. the remainder, it'll be handled later
 					if(!non_equiv.contains(f1)) non_equiv.add(f1);
 					if(!non_equiv.contains(f2)) non_equiv.add(f2);
 				}
 				else {
+					System.out.println("   Equivalent");
 					if(!equiv.contains(f1)) equiv.add(f1);
 					if(!equiv.contains(f2)) equiv.add(f2);
 				}
+				
+				System.out.println("--------------------------------------------------------");
 			}
 		}
-		
+		outputSummary(ontName, "classification", equiv, non_equiv);
+		return allEquiv;
+	}
+	
+	
+	private void outputSummary(String ontName, String opName, Set<File> equiv, Set<File> non_equiv) {
 		Set<File> toRemove = new HashSet<File>();
 		for(File f : non_equiv) {
 			if(equiv.contains(f))
 				toRemove.add(f);
 		}
-		non_equiv.remove(toRemove);
-		
+		non_equiv.removeAll(toRemove);
 		if(!non_equiv.isEmpty()) {
-			printSummary("Equivalent files", equiv);
-			printSummary("Non-Equivalent files", non_equiv);
+			printSummary("  Equivalent files", equiv);
+			printSummary("  Non-Equivalent files", non_equiv);
 		}
-		return allEquiv;
+		
+		String csv = ontName + "," + opName + "," + getReasonerNames(equiv) + "," + getReasonerNames(non_equiv) + "\n";
+		System.out.println("CSV: " + csv);
+	}
+	
+	
+	/**
+	 * Get the reasoner name for each given file, and pipe it to a string
+	 * @param files	Set of files
+	 * @return String containing the reasoner names corresponding to each file
+	 */
+	private String getReasonerNames(Set<File> files) {
+		String out = "";
+		Iterator<File> it = files.iterator();
+		while(it.hasNext()) {
+			File f = it.next();
+			out += f.getParentFile().getParentFile().getParentFile().getName(); // reasoner name assuming standard folder structure
+			if(it.hasNext()) out += " : ";
+		}
+		return out;
 	}
 	
 	
@@ -136,20 +166,23 @@ public class ResultComparator {
 	 */
 	private ChangeSet getDiff(File file1, File file2) {
 		ChangeSet changeSet = null;
-		OWLOntologyManager man = OWLManager.createOWLOntologyManager();
+		OWLOntologyManager man1 = OWLManager.createOWLOntologyManager();
+		OWLOntologyManager man2 = OWLManager.createOWLOntologyManager();
 		try {
-			OWLOntology result = man.loadOntologyFromOntologyDocument(file1);
-			OWLOntology base = man.loadOntologyFromOntologyDocument(file2);
+			OWLOntology ont1 = man1.loadOntologyFromOntologyDocument(file1);
+			OWLOntology ont2 = man2.loadOntologyFromOntologyDocument(file2);
 			
-			StructuralDiff sdiff = new StructuralDiff(result, base, false);
+			StructuralDiff sdiff = new StructuralDiff(ont1, ont2, false);
 			changeSet = sdiff.getDiff();
 			boolean isEquivalent = sdiff.isEquivalent();
 			
 			if(!isEquivalent) {
-				LogicalDiff ldiff = new LogicalDiff(result, base, false);
+				LogicalDiff ldiff = new LogicalDiff(ont1, ont2, false);
 				changeSet = ldiff.getDiff();
 				isEquivalent = ldiff.isEquivalent();
 			}
+			man1.removeOntology(ont1);
+			man2.removeOntology(ont2);
 		} catch (OWLOntologyCreationException e) {
 			e.printStackTrace();
 		}
@@ -157,10 +190,16 @@ public class ResultComparator {
 	}	
 	
 	
+	/**
+	 * List the given set of files
+	 * @param desc	Description, i.e., equivalent or non-equivalent
+	 * @param files	Set of files
+	 */
 	private void printSummary(String desc, Set<File> files) {
 		System.out.println(desc + ":");
 		for(File f : files)
 			System.out.println("\t" + f.getAbsolutePath());
+		System.out.println();
 	}
 	
 	
@@ -194,12 +233,18 @@ public class ResultComparator {
 			if(f.exists())
 				files.add(f);
 		}
-		
-		ResultComparator comp = new ResultComparator(files);
-		boolean allEquiv = comp.checkResultCorrectness(opName);
-		if(allEquiv)
-			System.out.println("All results files are equivalent");
+
+		String ops[] = {"sat","classification","consistency"};
+		List<String> opList = new ArrayList<String>(Arrays.asList(ops));
+		if(opList.contains(opName)) {
+			ResultComparator comp = new ResultComparator(files);
+			boolean allEquiv = comp.checkResultCorrectness(opName);
+			if(allEquiv)
+				System.out.println("All results files are equivalent");
+			else
+				System.out.println("Not all results files are equivalent");
+		}
 		else
-			System.out.println("Not all results files are equivalent");
+			System.err.println("Unrecognized operation name: " + opName);
 	}
 }

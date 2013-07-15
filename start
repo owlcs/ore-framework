@@ -6,8 +6,8 @@
 # 
 # Base folder(s): reasoner, ontologies, and runner scripts (change these appropriately)
 # 
-base="/Volumes/Data/ORE"
-#base="/shareddata/homes/samantha"
+# base="/Volumes/Data/ORE"
+base="/shareddata/homes/samantha"
 rbase="$base/reasoners"
 ontbase="$base/ontologies"
 runbase="$base/runner"
@@ -59,10 +59,10 @@ if [ $# -gt 1 ]; then
 		#
 		# Restrict system resources
 		# Max memory: 9GB
-		# Max time: 9 minutes cpu time
+		# Max time: 10 minutes cpu time
 		#
 		ulimit -v 9961472
-		ulimit -t 420
+		ulimit -t 600
 		# 
 		# Execute reasoner with given parameters. Once the operation
 		# is completed, the wall clock time difference is printed

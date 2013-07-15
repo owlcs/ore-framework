@@ -41,7 +41,7 @@ public class OutputHandler {
 			StringTokenizer st = new StringTokenizer(line, ":");
 			for(int i = 0; i < st.countTokens(); i++) {
 				String token = st.nextToken();
-				if(token.equalsIgnoreCase("operation time")) { 
+				if(token.equalsIgnoreCase("operation time") || token.equalsIgnoreCase("classification time")) { 
 					opTime = Double.parseDouble(st.nextToken());
 					System.out.println("\tOperation time: " + opTime + " milliseconds");
 				}
