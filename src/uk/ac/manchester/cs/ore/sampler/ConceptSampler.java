@@ -46,7 +46,7 @@ public class ConceptSampler {
 	public Set<OWLClass> getSample() {
 		Set<OWLClass> sample = new HashSet<OWLClass>();
 		List<OWLClass> list = new ArrayList<OWLClass>(ont.getClassesInSignature());
-		System.out.println("\tNumber of classes: " + list.size());
+		System.out.println("\tNumber of classes in ontology signature: " + list.size());
 		
 		Collections.shuffle(list);
 		for(int i = 0; i < sampleSize; i++) {
@@ -93,8 +93,9 @@ public class ConceptSampler {
 		OWLOntology ont = null;
 		try {
 			ont = man.loadOntologyFromOntologyDocument(f);
-		} catch(OWLOntologyCreationException e) {
+		} catch(Exception e) {
 			System.out.println("Unable to parse ontology: " + f.getAbsolutePath());
+			e.printStackTrace();
 		}
 		if(ont != null) {
 			System.out.println("Loaded ontology: " + f.getAbsolutePath());
@@ -108,8 +109,13 @@ public class ConceptSampler {
 			System.out.println("Output to: " + output);
 
 			int sampleSize = Integer.parseInt(args[2]);
-			ConceptSampler sampler = new ConceptSampler(ont, output, sampleSize);
-			sampler.serializeSample(sampler.getSample());
+			int classesInSig = ont.getClassesInSignature().size();
+			if(classesInSig >= sampleSize) {
+				ConceptSampler sampler = new ConceptSampler(ont, output, sampleSize);
+				sampler.serializeSample(sampler.getSample());
+			}
+			else
+				System.err.println("\tOntology only has " + classesInSig + " classes in its signature. Revise the sample size appropriately.");
 		}
 		System.out.println("Done");
 	}
