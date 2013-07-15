@@ -75,9 +75,10 @@ public class OutputHandler {
 			output += "timeout";
 		else {
 			while(line != null) {
+				line = line.trim();
 				line = line.replaceAll(",", ";");
 				output += line + " ";
-				line = reader.readLine().trim();
+				line = reader.readLine();
 			}
 		}
 		reader.close();

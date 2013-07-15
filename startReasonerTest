@@ -1,7 +1,7 @@
 #!/bin/bash
 # 
 # OWL Reasoner Evaluation Workshop (ORE) 2013
-# Last updated: 14-Jul-13
+# Last updated: 15-Jul-13
 # 
 # base="/Volumes/Data/ORE"
 base="/shareddata/homes/samantha"
@@ -15,18 +15,19 @@ satbase="$ontbase/sat"
 # 	<Operation>		One of: sat | classification | consistency
 #	<Output>		Output folder (within the reasoner folder)
 # 	<Reasoner>		Reasoner folder name (rooted at rbase above) which should contain an 'execReasoner' script
+#	<Syntax>		One of: functional | owlxml
 # 	<Profiles>		Profiles to be tested, any of: dl | el | rl (space separated)
 #
 # ORE-2013 reasoners: basevisor, elephant, elk, fact, hermit, jcel, jfact, konclude, 
 # more-hermit, more-pellet, snorocket, treasoner, trowl, wsclassifier
 # 
 args=("$@") 
-ELEMENTS=${#args[@]} 
-if [ $ELEMENTS -gt 2 ]; then
+ELEMENTS=${#args[@]}
+if [ $ELEMENTS -gt 4 ]; then
 	for (( i=0;i<$ELEMENTS;i++)); do 
-		if [ $i -gt 2 ]; then
+		if [ $i -gt 3 ]; then
 			profile=${args[${i}]}
-			for file in $ontbase/$profile/*; do
+			for file in $ontbase/$4/$profile/*; do
 				if [ "$1" = "sat" ]; then
 					filename=`basename $file`
 					while read class; do 
@@ -47,6 +48,7 @@ else
 	echo "	<Operation>		One of: sat | classification | consistency"
 	echo "	<Output>		Output folder (within the reasoner folder)"
 	echo "	<Reasoner>		Reasoner folder name"
+	echo "	<Syntax>		One of: functional | owlxml"
 	echo "	<Profiles>		Profiles to be tested, any of: dl | el | rl (space separated)"
 	echo ""
 fi

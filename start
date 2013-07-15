@@ -2,14 +2,13 @@
 # 
 # OWL Reasoner Evaluation Workshop (ORE) 2013
 # Reasoner Competition Benchmark Script v1.5
-# Last updated: 13-Jul-13
+# Last updated: 15-Jul-13
 # 
 # Base folder(s): reasoner, ontologies, and runner scripts (change these appropriately)
 # 
 # base="/Volumes/Data/ORE"
 base="/shareddata/homes/samantha"
 rbase="$base/reasoners"
-ontbase="$base/ontologies"
 runbase="$base/runner"
 # 
 # Using the script:
