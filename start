@@ -6,7 +6,7 @@
 # 
 # Base folder(s): reasoner, ontologies, and runner scripts (change these appropriately)
 # 
-base="/Users/rafa/Documents/PhD/ORE"
+base="/Volumes/Data/ORE"
 #base="/shareddata/homes/samantha"
 rbase="$base/reasoners"
 ontbase="$base/ontologies"
@@ -59,7 +59,7 @@ if [ $# -gt 1 ]; then
 		#
 		# Restrict system resources
 		# Max memory: 9GB
-		# Max time: 7 minutes (5 minute timeout + 2 minutes allowance)
+		# Max time: 9 minutes cpu time
 		#
 		ulimit -v 9961472
 		ulimit -t 420
@@ -69,10 +69,10 @@ if [ $# -gt 1 ]; then
 		# 
 		echo "   Executing reasoner..."
 		cd "$rbase/$4"
-		start_time=`date +%s`
+		start_time=$(date +%s)
 		rout=$(./execReasoner $1 $2 $out $5)
-		end_time=`date +%s`
-		duration=`expr $end_time - $start_time`
+		end_time=$(date +%s)
+		duration=$(( $end_time - $start_time ))
 		output="$rout"$'\n\t'"Duration: $duration"
 		echo "$rout"
 		log=$out"_log"

@@ -15,8 +15,17 @@ import java.util.StringTokenizer;
  * University of Manchester <br/>
  */
 public class OutputHandler {
+	private double opTime, opCpuTime, externalDuration;
 	
-	public OutputHandler() {}
+	/**
+	 * Constructor
+	 */
+	public OutputHandler() {
+		opTime = 0;
+		opCpuTime = 0;
+		externalDuration = 0;
+	}
+	
 	
 	/**
 	 * Parse the reasoner's output and retrieve the reported times 
@@ -27,7 +36,6 @@ public class OutputHandler {
 	public String parseFile(File reasonerOutput) throws IOException {
 		BufferedReader reader = new BufferedReader(new FileReader(reasonerOutput));
 		String line = reader.readLine();
-		double opTime = 0, opCpuTime = 0, externalDuration = 0;
 		while(line != null) {
 			line = line.trim();
 			StringTokenizer st = new StringTokenizer(line, ":");
@@ -49,10 +57,7 @@ public class OutputHandler {
 			line = reader.readLine();
 		}
 		reader.close();
-		String out = opTime + ",";
-		if(opCpuTime != 0) out += opCpuTime + ",";
-		out += externalDuration + ",";
-		return out;
+		return opTime + "," + opCpuTime + "," + externalDuration + ",";
 	}
 	
 	
@@ -76,9 +81,27 @@ public class OutputHandler {
 			}
 		}
 		reader.close();
-		return output;
+		return output + ",";
 	}
 		
+	
+	/**
+	 * Get operation time
+	 * @return Operation time (in milliseconds)
+	 */
+	public double getOpTime() {
+		return opTime;
+	}
+
+	
+	/**
+	 * Get operation CPU time
+	 * @return Operation CPU time (in milliseconds)
+	 */
+	public double getOpCpuTime() {
+		return opCpuTime;
+	}
+	
 	
 	/**
 	 * Main
@@ -112,6 +135,8 @@ public class OutputHandler {
 			if(!error.isEmpty())
 				row += error;
 		}
+		else if(handler.getOpTime() == 0 && handler.getOpCpuTime() == 0) 
+			row += "timeout,";
 
 		// Concept uri
 		if(args.length > 4) {
