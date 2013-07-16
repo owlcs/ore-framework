@@ -1,6 +1,10 @@
 package uk.ac.manchester.cs.ore.output;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -8,6 +12,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.StringTokenizer;
 
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.OWLAxiom;
@@ -54,14 +59,110 @@ public class ResultComparator {
 	public boolean checkResultCorrectness(String opName) {
 		boolean allCorrect = false;
 		if(opName.equalsIgnoreCase("classification"))
-			allCorrect = compareEntailmentSets();
-		else if(opName.equalsIgnoreCase("sat")) {
-			// TODO
-		}
-		else if(opName.equalsIgnoreCase("consistency")) {
-			// TODO
-		}
+			allCorrect = compareEntailmentSets(opName);
+		else if(opName.equalsIgnoreCase("sat"))
+			allCorrect = compareCSVResults(opName);
+		else if(opName.equalsIgnoreCase("consistency"))
+			allCorrect = compareCSVResults(opName);
 		return allCorrect;
+	}
+	
+	
+	/**
+	 * Compare CSV-based results files (i.e. sat and consistency)
+	 * @return true if all results are equal, false otherwise
+	 */
+	private boolean compareCSVResults(String opName) {
+		boolean allCorrect = true;
+		Set<File> equiv = new HashSet<File>();
+		Set<File> non_equiv = new HashSet<File>();
+		String ontName = "";
+		for(int i = 0; i < files.size(); i++) {
+			File f1 = files.get(i);
+			if(ontName == "") ontName = f1.getParentFile().getName();
+			for(int j = (i+1); j < files.size(); j++) {
+				File f2 = files.get(j);
+				printComparisonStatement(f1, f2);
+				
+				boolean equal;
+				if(opName.equals("sat")) equal = compareCSVLines(f1, f2);
+				else equal = compareCSVLine(f1, f2);
+				
+				if(equal) {
+					equiv.add(f1);
+					equiv.add(f2);
+				}
+				else {
+					non_equiv.add(f1);
+					non_equiv.add(f2);
+				}
+			}
+		}
+		outputSummary(ontName, opName, equiv, non_equiv);
+		return allCorrect;
+	}
+	
+	
+	/**
+	 * Compare sat results files
+	 * @param f1	File 1
+	 * @param f2	File 2
+	 * @return true if both files report the same results for all sat tests
+	 */
+	private boolean compareCSVLines(File f1, File f2) {
+		boolean equal = true;
+		try {
+			BufferedReader br1 = new BufferedReader(new FileReader(f1)), br2 = new BufferedReader(new FileReader(f2));
+			String line1 = br1.readLine(), line2 = br2.readLine();
+			while(line1 != null && line2 != null) {
+				StringTokenizer tokenizer1 = new StringTokenizer(line1, ",");
+				StringTokenizer tokenizer2 = new StringTokenizer(line2, ",");
+				
+				
+				
+				if(!line1.equals(line2))
+					equal = false;
+				
+				
+				line1 = br1.readLine();
+				line2 = br2.readLine();
+			}
+			br1.close();
+			br2.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return equal;
+	}
+	
+	
+	/**
+	 * Compare consistency results files
+	 * @param f1	File 1
+	 * @param f2	File 2
+	 * @return true if result is the same, false otherwise
+	 */
+	private boolean compareCSVLine(File f1, File f2) {
+		boolean equal = true;
+		try {
+			BufferedReader br1 = new BufferedReader(new FileReader(f1)), br2 = new BufferedReader(new FileReader(f2));
+			String line1 = br1.readLine(), line2 = br2.readLine();
+			while(line1 != null && line2 != null) {
+				if(!line1.equals(line2))
+					equal = false;
+				line1 = br1.readLine();
+				line2 = br2.readLine();
+			}
+			br1.close();
+			br2.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return equal;
 	}
 	
 	
@@ -69,7 +170,7 @@ public class ResultComparator {
 	 * Verify whether all given files have the same entailments
 	 * @return true if all files are equivalent, false otherwise
 	 */
-	private boolean compareEntailmentSets() {
+	private boolean compareEntailmentSets(String opName) {
 		boolean allEquiv = true;
 		Set<File> equiv = new HashSet<File>();
 		Set<File> non_equiv = new HashSet<File>();
@@ -80,7 +181,7 @@ public class ResultComparator {
 			if(ontName == "") ontName = f1.getParentFile().getName();
 			for(int j = (i+1); j < files.size(); j++) {
 				File f2 = files.get(j);
-				System.out.println("File 1: " + f1.getAbsolutePath() + "  VS  File 2: " + f2.getAbsolutePath());
+				printComparisonStatement(f1, f2);
 				ChangeSet cs = getDiff(f1, f2);
 				if(!cs.isEmpty()) {
 					allEquiv = false;
@@ -118,11 +219,18 @@ public class ResultComparator {
 				System.out.println("--------------------------------------------------------");
 			}
 		}
-		outputSummary(ontName, "classification", equiv, non_equiv);
+		outputSummary(ontName, opName, equiv, non_equiv);
 		return allEquiv;
 	}
 	
 	
+	/**
+	 * Print to stdout a summary of equivalent vs non-equivalent sets of output files
+	 * @param ontName	Ontology name
+	 * @param opName	Operation name
+	 * @param equiv	Set of equivalent result files
+	 * @param non_equiv	Set of non-equivalent result files
+	 */
 	private void outputSummary(String ontName, String opName, Set<File> equiv, Set<File> non_equiv) {
 		Set<File> toRemove = new HashSet<File>();
 		for(File f : non_equiv) {
@@ -137,6 +245,7 @@ public class ResultComparator {
 		
 		String csv = ontName + "," + opName + "," + getReasonerNames(equiv) + "," + getReasonerNames(non_equiv) + "\n";
 		System.out.println("CSV: " + csv);
+		// TODO serialize csv
 	}
 	
 	
@@ -200,6 +309,16 @@ public class ResultComparator {
 		for(File f : files)
 			System.out.println("\t" + f.getAbsolutePath());
 		System.out.println();
+	}
+	
+	
+	/**
+	 * Print file comparison statement
+	 * @param f1	File 1
+	 * @param f2	File 2
+	 */
+	private void printComparisonStatement(File f1, File f2) {
+		System.out.println("File 1: " + f1.getAbsolutePath() + "  VS  File 2: " + f2.getAbsolutePath());
 	}
 	
 	
