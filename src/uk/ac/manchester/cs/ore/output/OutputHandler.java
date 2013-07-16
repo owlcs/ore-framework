@@ -74,7 +74,7 @@ public class OutputHandler {
 		if(line.equalsIgnoreCase("timeout"))
 			output += "timeout";
 		else {
-			while(line != null) {
+			while(line != null && output.length()<5000) {
 				line = line.trim();
 				line = line.replaceAll(",", ";");
 				output += line + " ";

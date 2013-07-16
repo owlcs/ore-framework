@@ -82,8 +82,6 @@ public class ResultComparator {
 			if(ontName == "") ontName = f1.getParentFile().getName();
 			for(int j = (i+1); j < files.size(); j++) {
 				File f2 = files.get(j);
-				printComparisonStatement(f1, f2);
-				
 				boolean equal;
 				if(opName.equals("sat")) equal = compareCSVLines(f1, f2);
 				else equal = compareCSVLine(f1, f2);
@@ -93,6 +91,7 @@ public class ResultComparator {
 					equiv.add(f2);
 				}
 				else {
+					allCorrect = false;
 					non_equiv.add(f1);
 					non_equiv.add(f2);
 				}
@@ -115,20 +114,23 @@ public class ResultComparator {
 			BufferedReader br1 = new BufferedReader(new FileReader(f1)), br2 = new BufferedReader(new FileReader(f2));
 			String line1 = br1.readLine(), line2 = br2.readLine();
 			while(line1 != null && line2 != null) {
-				StringTokenizer tokenizer1 = new StringTokenizer(line1, ",");
-				StringTokenizer tokenizer2 = new StringTokenizer(line2, ",");
+				StringTokenizer tokenizer1 = new StringTokenizer(line1, ","), tokenizer2 = new StringTokenizer(line2, ",");
 				
+				String cName1 = tokenizer1.nextToken(), cName2 = tokenizer2.nextToken();
+				String result1 = tokenizer1.nextToken(), result2 = tokenizer2.nextToken();
 				
-				
-				if(!line1.equals(line2))
+				if(cName1.equals(cName2) && !result1.equals(result2)) {
 					equal = false;
-				
+					printComparisonStatement(f1, f2);
+					System.out.println("Concept 1: " + cName1 + "\tConcept 2: " + cName2);
+					System.out.println("Result 1: " + result1 + "\tResult 2: " + result2);
+					System.out.println("   File 1 reports " + result1 + " for " + cName1 + " while File 2 reports " + result2 + "\n");
+				}
 				
 				line1 = br1.readLine();
 				line2 = br2.readLine();
 			}
-			br1.close();
-			br2.close();
+			br1.close(); br2.close();
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -150,8 +152,11 @@ public class ResultComparator {
 			BufferedReader br1 = new BufferedReader(new FileReader(f1)), br2 = new BufferedReader(new FileReader(f2));
 			String line1 = br1.readLine(), line2 = br2.readLine();
 			while(line1 != null && line2 != null) {
-				if(!line1.equals(line2))
+				if(!line1.equals(line2)) {
 					equal = false;
+					printComparisonStatement(f1, f2);
+					System.out.println("   File 1 reports " + line1 + " while File 2 reports " + line2 + "\n");
+				}
 				line1 = br1.readLine();
 				line2 = br2.readLine();
 			}
