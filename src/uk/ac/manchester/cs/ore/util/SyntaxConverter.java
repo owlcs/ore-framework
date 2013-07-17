@@ -20,40 +20,51 @@ import org.semanticweb.owlapi.model.OWLOntologyStorageException;
 public class SyntaxConverter {
 
 	/**
-	 * @param 0: ontology file
+	 * Main
+	 * @param 0: syntax, one of: functional | owlxml
 	 * @param 1: output folder
-	 * @param 2: syntax, one of: functional | owlxml
+	 * @param 2: ontology file(s)
 	 */
 	public static void main(String[] args) {
-		File f = new File(args[0]);
-		OWLOntologyManager man = OWLManager.createOWLOntologyManager();
-		OWLOntology ont = null;
-		try {
-			ont = man.loadOntologyFromOntologyDocument(f);
-			System.out.println("Loaded ontology: " + f.getName());
-		} catch (Exception e) {
-			System.out.println("Unable to load ontology: " + f.getAbsolutePath());
-			e.printStackTrace();
-		}
-		if(ont != null) {
-			String out = args[1];
-			if(!out.endsWith(File.separator)) out += File.separator;
-			out += f.getName();
-			
-			String syntax = args[2];
-			OWLOntologyFormat format = null;
-			if(syntax.equals("functional"))
-				format = new OWLFunctionalSyntaxOntologyFormat();
-			else if(syntax.equals("owlxml"))
-				format = new OWLXMLOntologyFormat();
-			
-			System.out.println("Chosen syntax: " + syntax + "\nSerializing to: " + out);
+		String syntax = args[0];
+		System.out.println("Chosen syntax: " + syntax ); 
+		String out = args[1];
+		if(!out.endsWith(File.separator)) out += File.separator;
+		System.out.println("Output folder: " + out);
+		
+		int counter = 1;
+		for(int i = 2; i < args.length; i++) {
+			File f = new File(args[i]);
+			System.out.println("Input " + counter + ": " + f.getName());
+			OWLOntologyManager man = OWLManager.createOWLOntologyManager();
+			OWLOntology ont = null;
 			try {
-				man.saveOntology(ont, format, IRI.create("file:" + out));
-			} catch (OWLOntologyStorageException e) {
+				ont = man.loadOntologyFromOntologyDocument(f);
+				System.out.println("\tLoaded ontology: " + f.getName());
+			} catch (Exception e) {
+				System.out.println("\tUnable to load ontology: " + f.getAbsolutePath());
 				e.printStackTrace();
 			}
+			if(ont != null) {
+				String output = out + f.getName();
+				OWLOntologyFormat format = null;
+				if(syntax.equals("functional"))
+					format = new OWLFunctionalSyntaxOntologyFormat();
+				else if(syntax.equals("owlxml"))
+					format = new OWLXMLOntologyFormat();
+
+				System.out.println("\tSerializing to: " + output);
+				try {
+					man.saveOntology(ont, format, IRI.create("file:" + output));
+				} catch (OWLOntologyStorageException e) {
+					e.printStackTrace();
+				}
+				man.removeOntology(ont); ont = null;
+			}
+			man = null;
+			counter++;
+			System.out.println("\tDone");
 		}
-		System.out.println("Done");
+		System.out.println("Finished");
 	}
 }

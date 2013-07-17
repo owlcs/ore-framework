@@ -128,6 +128,12 @@ public class OutputHandler {
 		
 		// Operation name
 		String opName = args[1];
+	
+		// Concept uri
+		if(args.length > 4) {
+			String conceptUri = args[4];
+			row += conceptUri + ",";
+		}
 		
 		// Error file
 		File errorFile = new File(args[3] + "_err");
@@ -138,12 +144,6 @@ public class OutputHandler {
 		}
 		else if(handler.getOpTime() == 0 && handler.getOpCpuTime() == 0) 
 			row += "timeout,";
-
-		// Concept uri
-		if(args.length > 4) {
-			String conceptUri = args[4];
-			row += conceptUri + ",";
-		}
 		
 		File outputDir = f.getParentFile().getParentFile();
 		String outFile = outputDir.getAbsolutePath();
