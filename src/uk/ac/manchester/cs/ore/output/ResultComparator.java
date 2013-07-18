@@ -1,15 +1,16 @@
 package uk.ac.manchester.cs.ore.output;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -36,16 +37,21 @@ import uk.ac.manchester.cs.owl.owlapi.mansyntaxrenderer.ManchesterOWLSyntaxObjec
  * University of Manchester <br/>
  */
 public class ResultComparator {
-	private List<File> files;
+	private List<File> files, noFiles;
 	private SimpleShortFormProvider p;
+	private List<String> reasonerList;
+	private String outputFile;
 	
 	/**
 	 * Constructor
 	 * @param files	Set of results files
 	 */
-	public ResultComparator(List<File> files) {
+	public ResultComparator(List<File> files, List<File> noFiles, String outputFile) {
 		this.files = files;
+		this.noFiles = noFiles;
+		this.outputFile = outputFile;
 		p = new SimpleShortFormProvider();
+		reasonerList = getReasonerList();
 	}
 	
 	
@@ -97,7 +103,7 @@ public class ResultComparator {
 				}
 			}
 		}
-		outputSummary(ontName, opName, equiv, non_equiv);
+		produceOutput(ontName, opName, equiv, non_equiv);
 		return allCorrect;
 	}
 	
@@ -180,51 +186,54 @@ public class ResultComparator {
 		Set<File> equiv = new HashSet<File>();
 		Set<File> non_equiv = new HashSet<File>();
 		String ontName = "";
-		
-		for(int i = 0; i < files.size(); i++) {
-			File f1 = files.get(i);
-			if(ontName == "") ontName = f1.getParentFile().getName();
-			for(int j = (i+1); j < files.size(); j++) {
-				File f2 = files.get(j);
-				printComparisonStatement(f1, f2);
-				ChangeSet cs = getDiff(f1, f2);
-				if(!cs.isEmpty()) {
-					allEquiv = false;
-					Set<OWLAxiom> adds = null, rems = null;
-					if(cs instanceof LogicalChangeSet) {
-						adds = ((LogicalChangeSet)cs).getEffectualAdditionAxioms();
-						rems = ((LogicalChangeSet)cs).getEffectualRemovalAxioms();
+		if(!files.isEmpty()) {
+			for(int i = 0; i < files.size(); i++) {
+				File f1 = files.get(i);
+				if(ontName == "") ontName = f1.getParentFile().getName();
+				for(int j = (i+1); j < files.size(); j++) {
+					File f2 = files.get(j);
+					printComparisonStatement(f1, f2);
+					ChangeSet cs = getDiff(f1, f2);
+					if(!cs.isEmpty()) {
+						allEquiv = false;
+						Set<OWLAxiom> adds = null, rems = null;
+						if(cs instanceof LogicalChangeSet) {
+							adds = ((LogicalChangeSet)cs).getEffectualAdditionAxioms();
+							rems = ((LogicalChangeSet)cs).getEffectualRemovalAxioms();
+						}
+						else if(cs instanceof StructuralChangeSet) {
+							adds = ((StructuralChangeSet)cs).getAddedAxioms();
+							rems = ((StructuralChangeSet)cs).getRemovedAxioms();
+						}
+						if(!rems.isEmpty()) {
+							System.out.println("   File 1 has " + rems.size() + " extra entailments:");
+							for(OWLAxiom ax : rems)
+								System.out.println("\t" + getManchesterRendering(ax));
+						}
+
+						if(!adds.isEmpty()) {
+							System.out.println("   File 2 has " + adds.size() + " extra entailments:");
+							for(OWLAxiom ax : adds)
+								System.out.println("\t" + getManchesterRendering(ax));
+						}
+
+						// Add them both to non-equivalent set. If one turns out to be Ok w.r.t. the remainder, it'll be handled later
+						if(!non_equiv.contains(f1)) non_equiv.add(f1);
+						if(!non_equiv.contains(f2)) non_equiv.add(f2);
 					}
-					else if(cs instanceof StructuralChangeSet) {
-						adds = ((StructuralChangeSet)cs).getAddedAxioms();
-						rems = ((StructuralChangeSet)cs).getRemovedAxioms();
+					else {
+						System.out.println("   Equivalent");
+						if(!equiv.contains(f1)) equiv.add(f1);
+						if(!equiv.contains(f2)) equiv.add(f2);
 					}
-					if(!rems.isEmpty()) {
-						System.out.println("   File 1 has " + rems.size() + " extra entailments:");
-						for(OWLAxiom ax : rems)
-							System.out.println("\t" + getManchesterRendering(ax));
-					}
-					
-					if(!adds.isEmpty()) {
-						System.out.println("   File 2 has " + adds.size() + " extra entailments:");
-						for(OWLAxiom ax : adds)
-							System.out.println("\t" + getManchesterRendering(ax));
-					}
-					
-					// Add them both to non-equivalent set. If one turns out to be Ok w.r.t. the remainder, it'll be handled later
-					if(!non_equiv.contains(f1)) non_equiv.add(f1);
-					if(!non_equiv.contains(f2)) non_equiv.add(f2);
+
+					System.out.println("--------------------------------------------------------");
 				}
-				else {
-					System.out.println("   Equivalent");
-					if(!equiv.contains(f1)) equiv.add(f1);
-					if(!equiv.contains(f2)) equiv.add(f2);
-				}
-				
-				System.out.println("--------------------------------------------------------");
 			}
 		}
-		outputSummary(ontName, opName, equiv, non_equiv);
+		else allEquiv = false;
+		
+		produceOutput(ontName, opName, equiv, non_equiv);
 		return allEquiv;
 	}
 	
@@ -236,38 +245,84 @@ public class ResultComparator {
 	 * @param equiv	Set of equivalent result files
 	 * @param non_equiv	Set of non-equivalent result files
 	 */
-	private void outputSummary(String ontName, String opName, Set<File> equiv, Set<File> non_equiv) {
+	private void produceOutput(String ontName, String opName, Set<File> equiv, Set<File> non_equiv) {
 		Set<File> toRemove = new HashSet<File>();
 		for(File f : non_equiv) {
 			if(equiv.contains(f))
 				toRemove.add(f);
 		}
 		non_equiv.removeAll(toRemove);
+		
+		boolean output[] = new boolean[16];
+
+		// Reasoners with no files		
+		updateList(output, new HashSet<File>(noFiles), false);
+		updateList(output, equiv, true);
+		updateList(output, non_equiv, false);
+		
+		String out = produceCSV(ontName, opName, output);
+		serialize(out);
+		
 		if(!non_equiv.isEmpty()) {
 			printSummary("  Equivalent files", equiv);
 			printSummary("  Non-Equivalent files", non_equiv);
 		}
-		
-		String csv = ontName + "," + opName + "," + getReasonerNames(equiv) + "," + getReasonerNames(non_equiv) + "\n";
-		System.out.println("CSV: " + csv);
-		// TODO serialize csv
 	}
 	
 	
 	/**
-	 * Get the reasoner name for each given file, and pipe it to a string
-	 * @param files	Set of files
-	 * @return String containing the reasoner names corresponding to each file
+	 * Generate a comma-separated line with the results for all reasoners
+	 * @param ontName	Ontology name
+	 * @param opName	Operation name
+	 * @param output	Result list
+	 * @return Comma-separated string with all results
 	 */
-	private String getReasonerNames(Set<File> files) {
-		String out = "";
-		Iterator<File> it = files.iterator();
-		while(it.hasNext()) {
-			File f = it.next();
-			out += f.getParentFile().getParentFile().getParentFile().getName(); // reasoner name assuming standard folder structure
-			if(it.hasNext()) out += " : ";
-		}
+	private String produceCSV(String ontName, String opName, boolean[] output) {
+		String out = ontName + "," + opName + ",";
+		for(int i = 0; i < output.length; i++)
+			out += output[i] + ",";
 		return out;
+	}
+	
+	
+	/**
+	 * Update list with the given reasoners and result
+	 * @param output	Result list
+	 * @param names	Set of reasoner names
+	 * @param answer	Correctness answer
+	 * @return Updated list of results
+	 */
+	private boolean[] updateList(boolean[] output, Set<File> files, boolean answer) {
+		for(String reasoner : getReasonerNames(files)) {
+			if(reasonerList.contains(reasoner)) 
+				output[reasonerList.indexOf(reasoner)] = answer;
+			else 
+				System.out.println("Unknown reasoner: " + reasoner);
+		}
+		return output;
+	}
+	
+	
+	/**
+	 * Get the set of reasoner names for all files
+	 * @param files	Set of files
+	 * @return Set containing the reasoner names corresponding to each file
+	 */
+	private Set<String> getReasonerNames(Set<File> files) {
+		Set<String> out = new HashSet<String>();
+		for(File f : files)
+			out.add(getReasonerName(f));
+		return out;
+	}
+	
+	
+	/**
+	 * Get the reasoner name assuming standard folder structure
+	 * @param f	File
+	 * @return Reasoner name
+	 */
+	private String getReasonerName(File f) {
+		return f.getParentFile().getParentFile().getParentFile().getName();
 	}
 	
 	
@@ -328,6 +383,32 @@ public class ResultComparator {
 	
 	
 	/**
+	 * Generate the full list of reasoner names for ORE-2013
+	 * @return List of reasoner names
+	 */
+	private List<String> getReasonerList() {
+		String reasoners[] = {"basevisor","chainsaw","elephant","elk-loading-counted","elk-loading-not-counted","fact","hermit",
+				"jcel","jfact","konclude","more-hermit","more-pellet","snorocket","treasoner","trowl","wsclassifier"};
+		return new ArrayList<String>(Arrays.asList(reasoners));
+	}
+	
+	
+	/**
+	 * Append a given string to the specified output file
+	 * @param out	String to be flushed
+	 */
+	private void serialize(String out) {
+		try {
+			BufferedWriter br = new BufferedWriter(new FileWriter(new File(outputFile), true));
+			br.write(out + "\n");
+			br.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	
+	/**
 	 * Get Manchester syntax of an OWL object
 	 * @param obj	OWL object
 	 * @return A string with the object's conversion to Manchester syntax 
@@ -347,28 +428,32 @@ public class ResultComparator {
 	/**
 	 * Main
 	 * @param 0	Operation name
+	 * @param 1	Output file
 	 * @param 1..n	Results files
 	 */
 	public static void main(String[] args) {
 		String opName = args[0];
+		String outputFile = args[1];
+		
 		List<File> files = new ArrayList<File>();
-		for(int i = 0; i < args.length; i++) {
+		List<File> noFiles = new ArrayList<File>();
+		for(int i = 2; i < args.length; i++) {
 			File f = new File(args[i]);
-			if(f.exists())
-				files.add(f);
+			if(f.exists()) files.add(f);
+			else noFiles.add(f);
 		}
 
 		String ops[] = {"sat","classification","consistency"};
 		List<String> opList = new ArrayList<String>(Arrays.asList(ops));
 		if(opList.contains(opName)) {
-			ResultComparator comp = new ResultComparator(files);
-			boolean allEquiv = comp.checkResultCorrectness(opName);
-			if(allEquiv)
+			ResultComparator comp = new ResultComparator(files, noFiles, outputFile);
+			boolean allSame = comp.checkResultCorrectness(opName);
+			if(allSame)
 				System.out.println("All results files are equivalent");
 			else
 				System.out.println("Not all results files are equivalent");
 		}
 		else
-			System.err.println("Unrecognized operation name: " + opName);
+			System.out.println("! Unrecognized operation name: " + opName);
 	}
 }
