@@ -7,7 +7,6 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -17,18 +16,15 @@ import java.util.StringTokenizer;
 
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.OWLAxiom;
-import org.semanticweb.owlapi.model.OWLObject;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
-import org.semanticweb.owlapi.util.SimpleShortFormProvider;
 
 import uk.ac.manchester.cs.diff.axiom.LogicalDiff;
 import uk.ac.manchester.cs.diff.axiom.StructuralDiff;
 import uk.ac.manchester.cs.diff.axiom.changeset.ChangeSet;
 import uk.ac.manchester.cs.diff.axiom.changeset.LogicalChangeSet;
 import uk.ac.manchester.cs.diff.axiom.changeset.StructuralChangeSet;
-import uk.ac.manchester.cs.owl.owlapi.mansyntaxrenderer.ManchesterOWLSyntaxObjectRenderer;
 
 /**
  * @author Rafael S. Goncalves <br/>
@@ -38,9 +34,9 @@ import uk.ac.manchester.cs.owl.owlapi.mansyntaxrenderer.ManchesterOWLSyntaxObjec
  */
 public class ResultComparator {
 	private List<File> files, noFiles;
-	private SimpleShortFormProvider p;
 	private List<String> reasonerList;
-	private String outputFile;
+	private String outputFolder;
+	private BufferedWriter log;
 	
 	/**
 	 * Constructor
@@ -49,9 +45,9 @@ public class ResultComparator {
 	public ResultComparator(List<File> files, List<File> noFiles, String outputFile) {
 		this.files = files;
 		this.noFiles = noFiles;
-		this.outputFile = outputFile;
-		p = new SimpleShortFormProvider();
+		this.outputFolder = outputFile;
 		reasonerList = getReasonerList();
+		initLogWriter();
 	}
 	
 	
@@ -61,8 +57,9 @@ public class ResultComparator {
 	 * @param resultFile	Results file
 	 * @param baseFile	Base file
 	 * @return true if the result is correct, false otherwise
+	 * @throws IOException 
 	 */
-	public boolean checkResultCorrectness(String opName) {
+	public boolean checkResultCorrectness(String opName) throws IOException {
 		boolean allCorrect = false;
 		if(opName.equalsIgnoreCase("classification"))
 			allCorrect = compareEntailmentSets(opName);
@@ -77,8 +74,9 @@ public class ResultComparator {
 	/**
 	 * Compare CSV-based results files (i.e. sat and consistency)
 	 * @return true if all results are equal, false otherwise
+	 * @throws IOException 
 	 */
-	private boolean compareCSVResults(String opName) {
+	private boolean compareCSVResults(String opName) throws IOException {
 		boolean allCorrect = true;
 		Set<File> equiv = new HashSet<File>();
 		Set<File> non_equiv = new HashSet<File>();
@@ -127,7 +125,7 @@ public class ResultComparator {
 				
 				if(cName1.equals(cName2) && !result1.equals(result2)) {
 					equal = false;
-					printComparisonStatement(f1, f2);
+					System.out.println(getComparisonStatement(f1, f2));
 					System.out.println("Concept 1: " + cName1 + "\tConcept 2: " + cName2);
 					System.out.println("Result 1: " + result1 + "\tResult 2: " + result2);
 					System.out.println("   File 1 reports " + result1 + " for " + cName1 + " while File 2 reports " + result2 + "\n");
@@ -160,7 +158,7 @@ public class ResultComparator {
 			while(line1 != null && line2 != null) {
 				if(!line1.equals(line2)) {
 					equal = false;
-					printComparisonStatement(f1, f2);
+					System.out.println(getComparisonStatement(f1, f2));
 					System.out.println("   File 1 reports " + line1 + " while File 2 reports " + line2 + "\n");
 				}
 				line1 = br1.readLine();
@@ -180,54 +178,76 @@ public class ResultComparator {
 	/**
 	 * Verify whether all given files have the same entailments
 	 * @return true if all files are equivalent, false otherwise
+	 * @throws IOException 
 	 */
-	private boolean compareEntailmentSets(String opName) {
+	private boolean compareEntailmentSets(String opName) throws IOException {
 		boolean allEquiv = true;
 		Set<File> equiv = new HashSet<File>();
 		Set<File> non_equiv = new HashSet<File>();
+		String equivalent = "   Equivalent", sep = "----------------------------------------------------";
 		String ontName = "";
 		if(!files.isEmpty()) {
+			System.out.println("\nComparing results files...\n");
 			for(int i = 0; i < files.size(); i++) {
 				File f1 = files.get(i);
-				if(ontName == "") ontName = f1.getParentFile().getName();
-				for(int j = (i+1); j < files.size(); j++) {
-					File f2 = files.get(j);
-					printComparisonStatement(f1, f2);
-					ChangeSet cs = getDiff(f1, f2);
-					if(!cs.isEmpty()) {
-						allEquiv = false;
-						Set<OWLAxiom> adds = null, rems = null;
-						if(cs instanceof LogicalChangeSet) {
-							adds = ((LogicalChangeSet)cs).getEffectualAdditionAxioms();
-							rems = ((LogicalChangeSet)cs).getEffectualRemovalAxioms();
-						}
-						else if(cs instanceof StructuralChangeSet) {
-							adds = ((StructuralChangeSet)cs).getAddedAxioms();
-							rems = ((StructuralChangeSet)cs).getRemovedAxioms();
-						}
-						if(!rems.isEmpty()) {
-							System.out.println("   File 1 has " + rems.size() + " extra entailments:");
-							for(OWLAxiom ax : rems)
-								System.out.println("\t" + getManchesterRendering(ax));
-						}
+				if(ontName == "") {
+					ontName = f1.getParentFile().getName();
+					log.write(sep + "\nOntology: " + ontName); 
+				}
+				int equivTo = 0, nonEquivTo = 0;
+				OWLOntology ont1 = loadOntology(f1);
+				if(ont1 == null) non_equiv.add(f1);
+				else {
+					for(int j = (i+1); j < files.size(); j++) {
+						File f2 = files.get(j);
+						OWLOntology ont2 = loadOntology(f2);
+						if(ont2 == null) non_equiv.add(f2);
+						else {
+							String st = getComparisonStatement(f1, f2);
+							System.out.println(st); log.write("\n" + sep + "\n" + st + "\n");
 
-						if(!adds.isEmpty()) {
-							System.out.println("   File 2 has " + adds.size() + " extra entailments:");
-							for(OWLAxiom ax : adds)
-								System.out.println("\t" + getManchesterRendering(ax));
+							ChangeSet cs = getDiff(ont1, ont2);
+							if(!cs.isEmpty()) {
+								Set<OWLAxiom> adds = getAdditions(cs), rems = getRemovals(cs);
+								if(rems.isEmpty() && adds.isEmpty()) {
+									System.out.println(equivalent); log.write(equivalent); // only ineffectual differences
+									equiv.add(f1); equiv.add(f2);
+									equivTo++;
+								}
+								else {
+									allEquiv = false;
+									if(!rems.isEmpty()) {
+										String s = "   " + getReasonerName(f1) + " outputs " + rems.size() + " extra entailments";
+										System.out.println(s);
+										log.write(s + "\n");
+										for(OWLAxiom ax : rems)
+											log.write("\n\t" + ax);
+									}
+									if(!adds.isEmpty()) {
+										String s = "   " + getReasonerName(f2) + " outputs " + adds.size() + " extra entailments";
+										System.out.println(s);
+										log.write(s + "\n");
+										for(OWLAxiom ax : adds)
+											log.write("\n\t" + ax);
+									}
+									// Add them both to non-equivalent set. If one turns out to be Ok w.r.t. the remainder, it'll be handled later
+									non_equiv.add(f1); non_equiv.add(f2);
+									nonEquivTo++;
+								}
+							}
+							else {
+								System.out.println(equivalent); log.write(equivalent);
+								equiv.add(f1); equiv.add(f2);
+								equivTo++;
+							}
+							System.out.println(sep);
 						}
-
-						// Add them both to non-equivalent set. If one turns out to be Ok w.r.t. the remainder, it'll be handled later
-						if(!non_equiv.contains(f1)) non_equiv.add(f1);
-						if(!non_equiv.contains(f2)) non_equiv.add(f2);
 					}
-					else {
-						System.out.println("   Equivalent");
-						if(!equiv.contains(f1)) equiv.add(f1);
-						if(!equiv.contains(f2)) equiv.add(f2);
-					}
-
-					System.out.println("--------------------------------------------------------");
+				}
+				
+				if(nonEquivTo > equivTo) {
+					equiv.remove(f1);
+					non_equiv.add(f1);
 				}
 			}
 		}
@@ -239,13 +259,44 @@ public class ResultComparator {
 	
 	
 	/**
+	 * Get the set of added axioms from the given change set
+	 * @param cs	Change set
+	 * @return Set of added axioms
+	 */
+	private Set<OWLAxiom> getAdditions(ChangeSet cs) {
+		Set<OWLAxiom> out = null;
+		if(cs instanceof LogicalChangeSet)
+			out = ((LogicalChangeSet)cs).getEffectualAdditionAxioms();
+		else if(cs instanceof StructuralChangeSet)
+			out = ((StructuralChangeSet)cs).getAddedAxioms();
+		return out;
+	}
+	
+	
+	/**
+	 * Get the set of removed axioms from the given change set
+	 * @param cs	Change set
+	 * @return Set of removed axioms
+	 */
+	private Set<OWLAxiom> getRemovals(ChangeSet cs) {
+		Set<OWLAxiom> out = null;
+		if(cs instanceof LogicalChangeSet)
+			out = ((LogicalChangeSet)cs).getEffectualRemovalAxioms();
+		else if(cs instanceof StructuralChangeSet)
+			out = ((StructuralChangeSet)cs).getRemovedAxioms();
+		return out;
+	}
+	
+	
+	/**
 	 * Print to stdout a summary of equivalent vs non-equivalent sets of output files
 	 * @param ontName	Ontology name
 	 * @param opName	Operation name
 	 * @param equiv	Set of equivalent result files
 	 * @param non_equiv	Set of non-equivalent result files
+	 * @throws IOException 
 	 */
-	private void produceOutput(String ontName, String opName, Set<File> equiv, Set<File> non_equiv) {
+	private void produceOutput(String ontName, String opName, Set<File> equiv, Set<File> non_equiv) throws IOException {
 		Set<File> toRemove = new HashSet<File>();
 		for(File f : non_equiv) {
 			if(equiv.contains(f))
@@ -261,11 +312,18 @@ public class ResultComparator {
 		updateList(output, non_equiv, false);
 		
 		String out = produceCSV(ontName, opName, output);
-		serialize(out);
+		serialize(out, "results.csv");
 		
 		if(!non_equiv.isEmpty()) {
-			printSummary("  Equivalent files", equiv);
-			printSummary("  Non-Equivalent files", non_equiv);
+			log.write("\n\nSummary");
+			printSummary("Equivalent results", equiv);
+			printSummary("Non-Equivalent results", non_equiv);
+		}
+		
+		try {
+			log.close();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 	
@@ -329,45 +387,56 @@ public class ResultComparator {
 	/**
 	 * Verify whether two ontology files are equivalent, first w.r.t. structural diff and,
 	 * subsequently, because of the equivalent vs dual subsumptions issue, logical diff
-	 * @param file1	1st file
-	 * @param file2	2nd file
+	 * @param ont1	Ontology 1
+	 * @param ont2	Ontology 2
 	 * @return true if ontologies are logically equivalent
 	 */
-	private ChangeSet getDiff(File file1, File file2) {
+	private ChangeSet getDiff(OWLOntology ont1, OWLOntology ont2) {
 		ChangeSet changeSet = null;
-		OWLOntologyManager man1 = OWLManager.createOWLOntologyManager();
-		OWLOntologyManager man2 = OWLManager.createOWLOntologyManager();
-		try {
-			OWLOntology ont1 = man1.loadOntologyFromOntologyDocument(file1);
-			OWLOntology ont2 = man2.loadOntologyFromOntologyDocument(file2);
-			
-			StructuralDiff sdiff = new StructuralDiff(ont1, ont2, false);
-			changeSet = sdiff.getDiff();
-			boolean isEquivalent = sdiff.isEquivalent();
-			
-			if(!isEquivalent) {
-				LogicalDiff ldiff = new LogicalDiff(ont1, ont2, false);
-				changeSet = ldiff.getDiff();
-				isEquivalent = ldiff.isEquivalent();
-			}
-			man1.removeOntology(ont1);
-			man2.removeOntology(ont2);
-		} catch (OWLOntologyCreationException e) {
-			e.printStackTrace();
+		StructuralDiff sdiff = new StructuralDiff(ont1, ont2, false);
+		changeSet = sdiff.getDiff();
+		boolean structEquiv = sdiff.isEquivalent();
+
+		if(!structEquiv) {
+			LogicalDiff ldiff = new LogicalDiff(ont1, ont2, false);
+			changeSet = ldiff.getDiff();
 		}
+		ont1.getOWLOntologyManager().removeOntology(ont1);
+		ont2.getOWLOntologyManager().removeOntology(ont2);
 		return changeSet;
 	}	
+	
+	
+	/**
+	 * Load ontology file
+	 * @param f	File
+	 * @return OWLOntology
+	 */
+	private OWLOntology loadOntology(File f) {
+		OWLOntologyManager man = OWLManager.createOWLOntologyManager();
+		OWLOntology ont = null;
+		try {
+			ont = man.loadOntologyFromOntologyDocument(f);
+		} catch (OWLOntologyCreationException e) {
+			System.out.println("! Unable to parse results file of: " + getReasonerName(f) + "(" + f.getAbsolutePath() + ")");
+		}
+		return ont;
+	}
 	
 	
 	/**
 	 * List the given set of files
 	 * @param desc	Description, i.e., equivalent or non-equivalent
 	 * @param files	Set of files
+	 * @throws IOException 
 	 */
-	private void printSummary(String desc, Set<File> files) {
-		System.out.println(desc + ":");
-		for(File f : files)
-			System.out.println("\t" + f.getAbsolutePath());
+	private void printSummary(String desc, Set<File> files) throws IOException {
+		System.out.println(desc + ":"); log.write("\n  " + desc + ":" + "\n");
+		System.out.print("\t"); log.write("\t");
+		for(File f : files) {
+			System.out.print(getReasonerName(f) + " ");
+			log.write(getReasonerName(f) + " ");
+		}
 		System.out.println();
 	}
 	
@@ -377,8 +446,8 @@ public class ResultComparator {
 	 * @param f1	File 1
 	 * @param f2	File 2
 	 */
-	private void printComparisonStatement(File f1, File f2) {
-		System.out.println("File 1: " + f1.getAbsolutePath() + "  VS  File 2: " + f2.getAbsolutePath());
+	private String getComparisonStatement(File f1, File f2) {
+		return getReasonerName(f1) + " VS " + getReasonerName(f2);
 	}
 	
 	
@@ -397,9 +466,10 @@ public class ResultComparator {
 	 * Append a given string to the specified output file
 	 * @param out	String to be flushed
 	 */
-	private void serialize(String out) {
+	private void serialize(String out, String filename) {
+		if(!outputFolder.endsWith(File.separator)) outputFolder += File.separator;
 		try {
-			BufferedWriter br = new BufferedWriter(new FileWriter(new File(outputFile), true));
+			BufferedWriter br = new BufferedWriter(new FileWriter(new File(outputFolder + filename), true));
 			br.write(out + "\n");
 			br.close();
 		} catch (IOException e) {
@@ -409,29 +479,26 @@ public class ResultComparator {
 	
 	
 	/**
-	 * Get Manchester syntax of an OWL object
-	 * @param obj	OWL object
-	 * @return A string with the object's conversion to Manchester syntax 
+	 * Initialize log output writer
 	 */
-	public String getManchesterRendering(OWLObject obj) {
-		StringWriter wr = new StringWriter();
-		ManchesterOWLSyntaxObjectRenderer render = new ManchesterOWLSyntaxObjectRenderer(wr, p);
-		obj.accept(render);
-
-		String str = wr.getBuffer().toString();
-		str = str.replace("<", "");
-		str = str.replace(">", "");
-		return str;
+	private void initLogWriter() {
+		if(!outputFolder.endsWith(File.separator)) outputFolder += File.separator;
+		try {
+			log = new BufferedWriter(new FileWriter(new File(outputFolder + "log.txt"), true));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	
 	/**
 	 * Main
 	 * @param 0	Operation name
-	 * @param 1	Output file
+	 * @param 1	Output folder
 	 * @param 1..n	Results files
+	 * @throws IOException 
 	 */
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 		String opName = args[0];
 		String outputFile = args[1];
 		
@@ -449,9 +516,9 @@ public class ResultComparator {
 			ResultComparator comp = new ResultComparator(files, noFiles, outputFile);
 			boolean allSame = comp.checkResultCorrectness(opName);
 			if(allSame)
-				System.out.println("All results files are equivalent");
+				System.out.println("\nAll results files are equivalent");
 			else
-				System.out.println("Not all results files are equivalent");
+				System.out.println("\nNot all results files are equivalent");
 		}
 		else
 			System.out.println("! Unrecognized operation name: " + opName);
