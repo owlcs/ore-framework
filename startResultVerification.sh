@@ -13,7 +13,7 @@ rbase="$base/reasoners"
 # sh startResultVerification <Operation> <Output>
 #
 # 	<Operation>		One of: sat | classification | consistency
-#	<Output>		Output file
+#	<Output>		Output folder
 # 	<Profiles>		Profiles to be tested, any of: dl | el | rl (space separated)
 # 
 declare -a reasoners=(basevisor chainsaw elephant elk-loading-counted elk-loading-not-counted fact hermit jcel jfact konclude more-hermit more-pellet snorocket treasoner trowl wsclassifier)		
@@ -34,7 +34,7 @@ if [ $ELEMENTS -gt 1 ]; then
 				echo "Ontology: $filename"
 				echo "Ontology filepath: $file"
 				echo "Operation: $1"
-				echo "Output file: $2"
+				echo "Output folder: $2"
 				cmd=""
 				for i in ${reasoners[@]}
 				do
@@ -48,9 +48,9 @@ if [ $ELEMENTS -gt 1 ]; then
 else
 	echo "! Insufficient or no parameters given"
 	echo ""
-	echo "Usage:	sh startResultVerification <Operation> <Output>"
+	echo "Usage:	sh startResultVerification <Operation> <Output> <Profiles>"
 	echo "	<Operation>		One of: sat | classification | consistency"
-	echo "	<Output>		Output file"
+	echo "	<Output>		Output folder"
 	echo "	<Profiles>		Profiles to be tested, any of: dl | el | rl (space separated)"
 	echo ""
 fi

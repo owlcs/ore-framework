@@ -9,8 +9,12 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
 
@@ -33,19 +37,21 @@ import uk.ac.manchester.cs.diff.axiom.changeset.StructuralChangeSet;
  * University of Manchester <br/>
  */
 public class ResultComparator {
-	private List<File> files, noFiles;
+	private List<File> files;
 	private List<String> reasonerList;
 	private String outputFolder;
 	private BufferedWriter log;
+	private Map<String,String> map;
 	
 	/**
 	 * Constructor
 	 * @param files	Set of results files
+	 * @param outputFolder	Output folder
 	 */
-	public ResultComparator(List<File> files, List<File> noFiles, String outputFile) {
+	public ResultComparator(List<File> files, String outputFolder) {
 		this.files = files;
-		this.noFiles = noFiles;
-		this.outputFolder = outputFile;
+		this.outputFolder = outputFolder;
+		map = new HashMap<String,String>();
 		reasonerList = getReasonerList();
 		initLogWriter();
 	}
@@ -54,12 +60,11 @@ public class ResultComparator {
 	/**
 	 * Verify whether the given output is the correct one w.r.t. a base file
 	 * @param opName	Operation name
-	 * @param resultFile	Results file
-	 * @param baseFile	Base file
-	 * @return true if the result is correct, false otherwise
+	 * @return true if all results are the same, false otherwise
 	 * @throws IOException 
 	 */
 	public boolean checkResultCorrectness(String opName) throws IOException {
+		verifyFiles();
 		boolean allCorrect = false;
 		if(opName.equalsIgnoreCase("classification"))
 			allCorrect = compareEntailmentSets(opName);
@@ -68,6 +73,21 @@ public class ResultComparator {
 		else if(opName.equalsIgnoreCase("consistency"))
 			allCorrect = compareCSVResults(opName);
 		return allCorrect;
+	}
+	
+	
+	/**
+	 * Verify if given files exist
+	 */
+	public void verifyFiles() {
+		Set<File> toRemove = new HashSet<File>();
+		for(File f : files) {
+			if(!f.exists()) {
+				map.put(getReasonerName(f),"nofile");
+				toRemove.add(f);
+			}
+		}
+		files.removeAll(toRemove);
 	}
 	
 	
@@ -101,7 +121,7 @@ public class ResultComparator {
 				}
 			}
 		}
-		produceOutput(ontName, opName, equiv, non_equiv);
+//		produceOutput(ontName, opName, equiv, non_equiv);
 		return allCorrect;
 	}
 	
@@ -182,79 +202,92 @@ public class ResultComparator {
 	 */
 	private boolean compareEntailmentSets(String opName) throws IOException {
 		boolean allEquiv = true;
-		Set<File> equiv = new HashSet<File>();
-		Set<File> non_equiv = new HashSet<File>();
-		String equivalent = "   Equivalent", sep = "----------------------------------------------------";
-		String ontName = "";
+		String ontName = "", equivalent = "   Equivalent", 
+				sep = "----------------------------------------------------";
+		List<Set<File>> clusters = new ArrayList<Set<File>>();
+		Set<File> clustered = new HashSet<File>();
+		
 		if(!files.isEmpty()) {
 			System.out.println("\nComparing results files...\n");
-			for(int i = 0; i < files.size(); i++) {
-				File f1 = files.get(i);
-				if(ontName == "") {
-					ontName = f1.getParentFile().getName();
-					log.write(sep + "\nOntology: " + ontName); 
-				}
-				int equivTo = 0, nonEquivTo = 0;
+			LinkedList<File> list = new LinkedList<File>(files);
+			while(!list.isEmpty()) {
+				File f1 = list.pop();
+				if(ontName == "") { ontName = f1.getParentFile().getName(); log.write(sep + "\nOntology: " + ontName); }
 				OWLOntology ont1 = loadOntology(f1);
-				if(ont1 == null) non_equiv.add(f1);
+				if(ont1 == null)
+					map.put(getReasonerName(f1), "unparseable");
 				else {
-					for(int j = (i+1); j < files.size(); j++) {
-						File f2 = files.get(j);
-						OWLOntology ont2 = loadOntology(f2);
-						if(ont2 == null) non_equiv.add(f2);
-						else {
-							String st = getComparisonStatement(f1, f2);
-							System.out.println(st); log.write("\n" + sep + "\n" + st + "\n");
-
-							ChangeSet cs = getDiff(ont1, ont2);
-							if(!cs.isEmpty()) {
-								Set<OWLAxiom> adds = getAdditions(cs), rems = getRemovals(cs);
-								if(rems.isEmpty() && adds.isEmpty()) {
-									System.out.println(equivalent); log.write(equivalent); // only ineffectual differences
-									equiv.add(f1); equiv.add(f2);
-									equivTo++;
-								}
-								else {
-									allEquiv = false;
-									if(!rems.isEmpty()) {
-										String s = "   " + getReasonerName(f1) + " outputs " + rems.size() + " extra entailments";
-										System.out.println(s);
-										log.write(s + "\n");
-										for(OWLAxiom ax : rems)
-											log.write("\n\t" + ax);
-									}
-									if(!adds.isEmpty()) {
-										String s = "   " + getReasonerName(f2) + " outputs " + adds.size() + " extra entailments";
-										System.out.println(s);
-										log.write(s + "\n");
-										for(OWLAxiom ax : adds)
-											log.write("\n\t" + ax);
-									}
-									// Add them both to non-equivalent set. If one turns out to be Ok w.r.t. the remainder, it'll be handled later
-									non_equiv.add(f1); non_equiv.add(f2);
-									nonEquivTo++;
-								}
+					Set<File> f1Cluster = new HashSet<File>(Collections.singleton(f1));
+					for(File f2 : files) {
+						if(f1 != f2 && !clustered.contains(f2)) {
+							OWLOntology ont2 = loadOntology(f2);
+							if(ont2 == null) {
+								map.put(getReasonerName(f2), "unparseable");
+								list.remove(f2);
+								clustered.add(f2);
 							}
 							else {
-								System.out.println(equivalent); log.write(equivalent);
-								equiv.add(f1); equiv.add(f2);
-								equivTo++;
+								printComparisonStatement(sep, f1, f2);
+								ChangeSet cs = getDiff(ont1, ont2);
+								if(!cs.isEmpty()) {
+									Set<OWLAxiom> adds = getAdditions(cs), rems = getRemovals(cs);
+									if(rems.isEmpty() && adds.isEmpty()) {
+										System.out.println(equivalent); log.write(equivalent); // only ineffectual differences
+										f1Cluster.add(f2);
+										list.remove(f2);
+										clustered.add(f2);
+									}
+									else {
+										allEquiv = false;
+										logChanges(f1, f2, adds, rems);
+									}
+								}
+								else {
+									System.out.println(equivalent); log.write(equivalent);
+									f1Cluster.add(f2);
+									list.remove(f2);
+									clustered.add(f2);
+								}
+								System.out.println(sep);
+								ont2.getOWLOntologyManager().removeOntology(ont2);
 							}
-							System.out.println(sep);
 						}
 					}
-				}
-				
-				if(nonEquivTo > equivTo) {
-					equiv.remove(f1);
-					non_equiv.add(f1);
+					clusters.add(f1Cluster);
+					ont1.getOWLOntologyManager().removeOntology(ont1);
 				}
 			}
 		}
 		else allEquiv = false;
-		
-		produceOutput(ontName, opName, equiv, non_equiv);
+	
+		produceOutput(ontName, opName, clusters);
 		return allEquiv;
+	}
+	
+	
+	/**
+	 * Log differences between the two files
+	 * @param f1	File 1
+	 * @param f2	File 2
+	 * @param rems	Set of removals
+	 * @param adds	Set of additions
+	 * @throws IOException
+	 */
+	private void logChanges(File f1, File f2, Set<OWLAxiom> rems, Set<OWLAxiom> adds) throws IOException {
+		if(!rems.isEmpty()) {
+			String s = "   " + getReasonerName(f1) + " outputs " + rems.size() + " extra entailment(s)";
+			System.out.println(s);
+			log.write(s + "\n");
+			for(OWLAxiom ax : rems)
+				log.write("\n\t" + ax);
+		}
+		if(!adds.isEmpty()) {
+			String s = "   " + getReasonerName(f2) + " outputs " + adds.size() + " extra entailment(s)";
+			System.out.println(s);
+			log.write(s + "\n");
+			for(OWLAxiom ax : adds)
+				log.write("\n\t" + ax);
+		}
 	}
 	
 	
@@ -292,72 +325,101 @@ public class ResultComparator {
 	 * Print to stdout a summary of equivalent vs non-equivalent sets of output files
 	 * @param ontName	Ontology name
 	 * @param opName	Operation name
-	 * @param equiv	Set of equivalent result files
-	 * @param non_equiv	Set of non-equivalent result files
+	 * @param correct	Set of correct result files
+	 * @param incorrect	Set of incorrect result files
 	 * @throws IOException 
 	 */
-	private void produceOutput(String ontName, String opName, Set<File> equiv, Set<File> non_equiv) throws IOException {
-		Set<File> toRemove = new HashSet<File>();
-		for(File f : non_equiv) {
-			if(equiv.contains(f))
-				toRemove.add(f);
+//	private void produceOutput(String ontName, String opName, Set<File> correct, Set<File> incorrect) throws IOException {
+//		Set<File> toRemove = new HashSet<File>();
+//		for(File f : incorrect) {
+//			if(correct.contains(f))
+//				toRemove.add(f);
+//		}
+//		incorrect.removeAll(toRemove);
+//		
+//		boolean output[] = new boolean[16];
+//
+//		// Reasoners with no files		
+//		updateList(output, new HashSet<File>(noFiles), false);
+//		updateList(output, correct, true);
+//		updateList(output, incorrect, false);
+//		
+//		String out = produceCSV(ontName, opName, output);
+//		serialize(out, "results.csv");
+//		
+//		if(!incorrect.isEmpty()) {
+//			log.write("\n\nSummary");
+//			printSummary("Equivalent results", correct);
+//			printSummary("Non-Equivalent results", incorrect);
+//		}
+//		
+//		try {
+//			log.close();
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+//	}
+	
+	
+	private void produceOutput(String ontName, String opName, List<Set<File>> clusters) throws IOException {
+		int max = 0, index = 0;
+		for(int i = 0; i<clusters.size(); i++) {
+			Set<File> fileset = clusters.get(i);
+			if(fileset.size() > max) {
+				max = fileset.size();
+				index = i;
+			}
+			String cluster = "Cluster " + (i+1) + " (size " + fileset.size() + "): ";
+			System.out.print(cluster); log.write("\n" + cluster); 
+			for(File f : fileset) {
+				String r = getReasonerName(f) + " ";
+				System.out.print(r);
+				cluster += r;
+			}
+			System.out.println();
 		}
-		non_equiv.removeAll(toRemove);
 		
-		boolean output[] = new boolean[16];
-
-		// Reasoners with no files		
-		updateList(output, new HashSet<File>(noFiles), false);
-		updateList(output, equiv, true);
-		updateList(output, non_equiv, false);
-		
-		String out = produceCSV(ontName, opName, output);
-		serialize(out, "results.csv");
-		
-		if(!non_equiv.isEmpty()) {
-			log.write("\n\nSummary");
-			printSummary("Equivalent results", equiv);
-			printSummary("Non-Equivalent results", non_equiv);
+		Set<File> correct = clusters.get(index);
+		Set<File> incorrect = new HashSet<File>();
+		for(int i = 0; i<clusters.size(); i++) {
+			if(i!=index) {
+				for(File f : clusters.get(i))
+					incorrect.add(f);
+			}
 		}
-		
-		try {
-			log.close();
-		} catch (IOException e) {
-			e.printStackTrace();
+		updateMap(correct, "true");
+		updateMap(incorrect, "false");
+		if(!incorrect.isEmpty()) {
+			printSummary("  Equivalent", correct);
+			printSummary("  Non Equivalent", incorrect);
 		}
+		serialize(generateCSV(ontName, opName), "results.csv");
 	}
 	
 	
 	/**
-	 * Generate a comma-separated line with the results for all reasoners
+	 * Update results map
+	 * @param files	Set of files
+	 * @param value	Map value for all files 
+	 */
+	private void updateMap(Set<File> files, String value) {
+		for(File f : files)
+			map.put(getReasonerName(f), value);
+	}
+	
+	
+	/**
+	 * Generate a comma-separated row with the results in the map
 	 * @param ontName	Ontology name
 	 * @param opName	Operation name
-	 * @param output	Result list
-	 * @return Comma-separated string with all results
+	 * @return Comma-separated string with the results 
 	 */
-	private String produceCSV(String ontName, String opName, boolean[] output) {
+	private String generateCSV(String ontName, String opName) {
 		String out = ontName + "," + opName + ",";
-		for(int i = 0; i < output.length; i++)
-			out += output[i] + ",";
-		return out;
-	}
-	
-	
-	/**
-	 * Update list with the given reasoners and result
-	 * @param output	Result list
-	 * @param names	Set of reasoner names
-	 * @param answer	Correctness answer
-	 * @return Updated list of results
-	 */
-	private boolean[] updateList(boolean[] output, Set<File> files, boolean answer) {
-		for(String reasoner : getReasonerNames(files)) {
-			if(reasonerList.contains(reasoner)) 
-				output[reasonerList.indexOf(reasoner)] = answer;
-			else 
-				System.out.println("Unknown reasoner: " + reasoner);
+		for(String r : reasonerList) {
+			out += map.get(r) + ",";
 		}
-		return output;
+		return out;
 	}
 	
 	
@@ -366,6 +428,7 @@ public class ResultComparator {
 	 * @param files	Set of files
 	 * @return Set containing the reasoner names corresponding to each file
 	 */
+	@SuppressWarnings("unused")
 	private Set<String> getReasonerNames(Set<File> files) {
 		Set<String> out = new HashSet<String>();
 		for(File f : files)
@@ -389,7 +452,7 @@ public class ResultComparator {
 	 * subsequently, because of the equivalent vs dual subsumptions issue, logical diff
 	 * @param ont1	Ontology 1
 	 * @param ont2	Ontology 2
-	 * @return true if ontologies are logically equivalent
+	 * @return Change set between the two given ontologies
 	 */
 	private ChangeSet getDiff(OWLOntology ont1, OWLOntology ont2) {
 		ChangeSet changeSet = null;
@@ -401,8 +464,6 @@ public class ResultComparator {
 			LogicalDiff ldiff = new LogicalDiff(ont1, ont2, false);
 			changeSet = ldiff.getDiff();
 		}
-		ont1.getOWLOntologyManager().removeOntology(ont1);
-		ont2.getOWLOntologyManager().removeOntology(ont2);
 		return changeSet;
 	}	
 	
@@ -418,7 +479,7 @@ public class ResultComparator {
 		try {
 			ont = man.loadOntologyFromOntologyDocument(f);
 		} catch (OWLOntologyCreationException e) {
-			System.out.println("! Unable to parse results file of: " + getReasonerName(f) + "(" + f.getAbsolutePath() + ")");
+			System.out.println("! Unable to parse results file of: " + getReasonerName(f) + " (" + f.getAbsolutePath() + ")");
 		}
 		return ont;
 	}
@@ -442,12 +503,26 @@ public class ResultComparator {
 	
 	
 	/**
-	 * Print file comparison statement
+	 * Get file comparison statement
 	 * @param f1	File 1
 	 * @param f2	File 2
+	 * @return String with the comparison statement
 	 */
 	private String getComparisonStatement(File f1, File f2) {
-		return getReasonerName(f1) + " VS " + getReasonerName(f2);
+		return getReasonerName(f1) + " vs " + getReasonerName(f2);
+	}
+	
+	
+	/**
+	 * Print file comparison statement
+	 * @param sep	Separator string
+	 * @param f1	File 1
+	 * @param f2	File 2
+	 * @throws IOException
+	 */
+	private void printComparisonStatement(String sep, File f1, File f2) throws IOException {
+		String st = getComparisonStatement(f1, f2);
+		System.out.println(st); log.write("\n" + sep + "\n" + st + "\n");
 	}
 	
 	
@@ -503,17 +578,13 @@ public class ResultComparator {
 		String outputFile = args[1];
 		
 		List<File> files = new ArrayList<File>();
-		List<File> noFiles = new ArrayList<File>();
-		for(int i = 2; i < args.length; i++) {
-			File f = new File(args[i]);
-			if(f.exists()) files.add(f);
-			else noFiles.add(f);
-		}
+		for(int i = 2; i < args.length; i++)
+			files.add(new File(args[i]));
 
 		String ops[] = {"sat","classification","consistency"};
 		List<String> opList = new ArrayList<String>(Arrays.asList(ops));
 		if(opList.contains(opName)) {
-			ResultComparator comp = new ResultComparator(files, noFiles, outputFile);
+			ResultComparator comp = new ResultComparator(files, outputFile);
 			boolean allSame = comp.checkResultCorrectness(opName);
 			if(allSame)
 				System.out.println("\nAll results files are equivalent");
