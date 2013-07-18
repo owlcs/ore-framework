@@ -51,5 +51,6 @@ else
 	echo "Usage:	sh startResultVerification <Operation> <Output>"
 	echo "	<Operation>		One of: sat | classification | consistency"
 	echo "	<Output>		Output file"
+	echo "	<Profiles>		Profiles to be tested, any of: dl | el | rl (space separated)"
 	echo ""
 fi
