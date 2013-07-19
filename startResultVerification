@@ -33,13 +33,13 @@ if [ $ELEMENTS -gt 2 ]; then
 			echo "Ontology: $filename"
 			echo "Ontology filepath: $file"
 			echo "Operation: $1"
-			echo "Output folder: $2"
+			echo "Output folder: $2/$profile"
 			cmd=""
 			for reasoner in ${reasoners[@]}
 			do
 				cmd="$cmd $rbase/$reasoner/output/$filename/$1.$ext"
 			done
-			java -Xmx8G -jar ResultChecker.jar $1 $2 $cmd
+			java -Xmx8G -jar ResultChecker.jar $1 $2/$profile $cmd
 			printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
 		done
 	done

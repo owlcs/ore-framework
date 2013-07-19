@@ -216,6 +216,8 @@ public class ResultComparator {
 				OWLOntology ont1 = loadOntology(f1);
 				if(ont1 == null)
 					map.put(getReasonerName(f1), "unparseable");
+				else if(!(ont1.getLogicalAxiomCount()>0))
+					map.put(getReasonerName(f1), "empty");
 				else {
 					Set<File> f1Cluster = new HashSet<File>(Collections.singleton(f1));
 					for(File f2 : files) {
@@ -226,6 +228,8 @@ public class ResultComparator {
 								list.remove(f2);
 								clustered.add(f2);
 							}
+							else if(!(ont2.getLogicalAxiomCount()>0))
+								map.put(getReasonerName(f2), "empty");
 							else {
 								printComparisonStatement(sep, f1, f2);
 								ChangeSet cs = getDiff(ont1, ont2);
@@ -578,7 +582,9 @@ public class ResultComparator {
 		BufferedWriter out = null;
 		if(!outputFolder.endsWith(File.separator)) outputFolder += File.separator;
 		try {
-			out = new BufferedWriter(new FileWriter(new File(outputFolder + filename), true));
+			File file = new File(outputFolder + filename);
+			file.getParentFile().mkdirs();
+			out = new BufferedWriter(new FileWriter(file, true));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
