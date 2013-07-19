@@ -58,7 +58,7 @@ public class ResultComparator {
 		this.ontName = ontName;
 		map = new HashMap<String,String>();
 		reasonerList = getReasonerList();
-		log = initWriter("log.txt");
+		log = initWriter(outputFolder,"log.txt", true);
 	}
 	
 	
@@ -380,7 +380,7 @@ public class ResultComparator {
 			System.out.println("No reasoner produced a (valid) result file");
 		
 		serializeClusterInfo(clusters);
-		serialize(generateCSV(), "results.csv");
+		serialize(generateCSV(), outputFolder, "results.csv", true);
 	}
 	
 	
@@ -496,16 +496,40 @@ public class ResultComparator {
 	 * Load ontology file
 	 * @param f	File
 	 * @return OWLOntology
+	 * @throws IOException 
 	 */
-	private OWLOntology loadOntology(File f) {
+	private OWLOntology loadOntology(File f) throws IOException {
 		OWLOntologyManager man = OWLManager.createOWLOntologyManager();
 		OWLOntology ont = null;
+		if(getReasonerName(f).equals("elephant")) f = new File(fixFile(f));
 		try {
 			ont = man.loadOntologyFromOntologyDocument(f);
 		} catch (OWLOntologyCreationException e) {
 			System.out.println("! Unable to parse results file of: " + getReasonerName(f) + " (" + f.getAbsolutePath() + ")");
 		}
 		return ont;
+	}
+	
+	
+	
+	/**
+	 * Elephant's producing an invalid OWL file, missing Ontology(..) statement
+	 * @param f	File to fix
+	 * @throws IOException
+	 */
+	private String fixFile(File f) throws IOException {
+		String outputString = "Ontology(\n";
+		BufferedReader br = new BufferedReader(new FileReader(f));
+		String line;
+		while((line = br.readLine()) != null)
+			outputString += line + "\n";
+		br.close();
+		outputString += ")";
+		String folder = f.getParentFile().getAbsolutePath();
+		if(!folder.endsWith(File.separator)) folder += File.separator;
+		String filename = f.getName()+"_fixed.owl";
+		serialize(outputString, folder, filename, false);
+		return folder+filename;
 	}
 	
 	
@@ -565,8 +589,8 @@ public class ResultComparator {
 	 * Append a given string to the specified output file
 	 * @param out	String to be flushed
 	 */
-	private void serialize(String out, String filename) {
-		BufferedWriter br = initWriter(filename);
+	private void serialize(String out, String folder, String filename, boolean append) {
+		BufferedWriter br = initWriter(folder, filename, append);
 		try {
 			br.write(out + "\n");
 			br.close();
@@ -587,7 +611,7 @@ public class ResultComparator {
 			for(String r : getReasonerNames(set))
 				out += r + " ";
 		}
-		serialize(out, "clusters.csv");
+		serialize(out, outputFolder, "clusters.csv", true);
 	}
 	
 	
@@ -596,13 +620,13 @@ public class ResultComparator {
 	 * @param filename	Desired filename
 	 * @return Buffered file writer
 	 */
-	private BufferedWriter initWriter(String filename) {
+	private BufferedWriter initWriter(String folder, String filename, boolean append) {
 		BufferedWriter out = null;
-		if(!outputFolder.endsWith(File.separator)) outputFolder += File.separator;
+		if(!folder.endsWith(File.separator)) folder += File.separator;
 		try {
-			File file = new File(outputFolder + filename);
+			File file = new File(folder + filename);
 			file.getParentFile().mkdirs();
-			out = new BufferedWriter(new FileWriter(file, true));
+			out = new BufferedWriter(new FileWriter(file, append));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
