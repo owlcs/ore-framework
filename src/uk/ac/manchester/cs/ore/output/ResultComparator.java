@@ -42,15 +42,20 @@ public class ResultComparator {
 	private String outputFolder;
 	private BufferedWriter log;
 	private Map<String,String> map;
+	private String ontName, opName;
 	
 	/**
 	 * Constructor
 	 * @param files	Set of results files
+	 * @param opName	Operation name
 	 * @param outputFolder	Output folder
+	 * @param ontName	Ontology filename
 	 */
-	public ResultComparator(List<File> files, String outputFolder) {
+	public ResultComparator(List<File> files, String opName, String outputFolder, String ontName) {
 		this.files = files;
+		this.opName = opName;
 		this.outputFolder = outputFolder;
+		this.ontName = ontName;
 		map = new HashMap<String,String>();
 		reasonerList = getReasonerList();
 		log = initWriter("log.txt");
@@ -59,19 +64,18 @@ public class ResultComparator {
 	
 	/**
 	 * Verify whether the given output is the correct one w.r.t. a base file
-	 * @param opName	Operation name
 	 * @return true if all results are the same, false otherwise
 	 * @throws IOException 
 	 */
-	public boolean checkResultCorrectness(String opName) throws IOException {
+	public boolean checkResultCorrectness() throws IOException {
 		verifyFiles();
 		boolean allCorrect = false;
 		if(opName.equalsIgnoreCase("classification"))
-			allCorrect = compareEntailmentSets(opName);
+			allCorrect = compareEntailmentSets();
 		else if(opName.equalsIgnoreCase("sat"))
-			allCorrect = compareCSVResults(opName);
+			allCorrect = compareCSVResults();
 		else if(opName.equalsIgnoreCase("consistency"))
-			allCorrect = compareCSVResults(opName);
+			allCorrect = compareCSVResults();
 		return allCorrect;
 	}
 	
@@ -96,7 +100,7 @@ public class ResultComparator {
 	 * @return true if all results are equal, false otherwise
 	 * @throws IOException 
 	 */
-	private boolean compareCSVResults(String opName) throws IOException {
+	private boolean compareCSVResults() throws IOException {
 		boolean allCorrect = true;
 		Set<File> equiv = new HashSet<File>();
 		Set<File> non_equiv = new HashSet<File>();
@@ -200,12 +204,13 @@ public class ResultComparator {
 	 * @return true if all files are equivalent, false otherwise
 	 * @throws IOException 
 	 */
-	private boolean compareEntailmentSets(String opName) throws IOException {
+	private boolean compareEntailmentSets() throws IOException {
 		boolean allEquiv = true;
 		String ontName = "", equivalent = "   Equivalent", 
 				sep = "----------------------------------------------------";
 		List<Set<File>> clusters = new ArrayList<Set<File>>();
 		Set<File> clustered = new HashSet<File>();
+		log.write(sep + "\nOntology: " + ontName); 
 		
 		if(!files.isEmpty()) {
 			System.out.println("\nComparing results files...\n");
@@ -213,8 +218,6 @@ public class ResultComparator {
 			while(!list.isEmpty()) {
 				File f1 = list.pop();
 				clustered.add(f1);
-				
-				if(ontName == "") { ontName = f1.getParentFile().getName(); log.write(sep + "\nOntology: " + ontName); }
 				OWLOntology ont1 = loadOntology(f1);
 				if(ont1 == null)
 					map.put(getReasonerName(f1), "unparseable");
@@ -266,7 +269,7 @@ public class ResultComparator {
 		}
 		else allEquiv = false;
 	
-		produceOutput(ontName, opName, clusters);
+		produceOutput(clusters);
 		return allEquiv;
 	}
 	
@@ -329,8 +332,6 @@ public class ResultComparator {
 	
 	/**
 	 * Print to stdout a summary of equivalent vs non-equivalent sets of output files
-	 * @param ontName	Ontology name
-	 * @param opName	Operation name
 	 * @param correct	Set of correct result files
 	 * @param incorrect	Set of incorrect result files
 	 * @throws IOException 
@@ -367,7 +368,28 @@ public class ResultComparator {
 //	}
 	
 	
-	private void produceOutput(String ontName, String opName, List<Set<File>> clusters) throws IOException {
+	/**
+	 * Produce output results file and cluster info file
+	 * @param clusters	List of file clusters
+	 * @throws IOException
+	 */
+	private void produceOutput(List<Set<File>> clusters) throws IOException {
+		if(!clusters.isEmpty())
+			analyseClusters(clusters);
+		else
+			System.out.println("No reasoner produced a (valid) result file");
+		
+		serializeClusterInfo(clusters);
+		serialize(generateCSV(), "results.csv");
+	}
+	
+	
+	/**
+	 * Checks all clusters to determine which contains the highest number of files (i.e., most agreed-upon result)
+	 * @param clusters	List of file clusters
+	 * @throws IOException
+	 */
+	private void analyseClusters(List<Set<File>> clusters) throws IOException {
 		int max = 0, index = 0;
 		for(int i = 0; i<clusters.size(); i++) {
 			Set<File> fileset = clusters.get(i);
@@ -384,7 +406,7 @@ public class ResultComparator {
 			}
 			System.out.println();
 		}
-		
+
 		Set<File> correct = clusters.get(index);
 		Set<File> incorrect = new HashSet<File>();
 		for(int i = 0; i<clusters.size(); i++) {
@@ -399,8 +421,6 @@ public class ResultComparator {
 			printSummary("  Equivalent (majority)", correct);
 			printSummary("  Non Equivalent", incorrect);
 		}
-		serialize(generateCSV(ontName, opName), "results.csv");
-		serializeClusterInfo(ontName, opName, clusters);
 	}
 	
 	
@@ -417,11 +437,9 @@ public class ResultComparator {
 	
 	/**
 	 * Generate a comma-separated row with the results in the map
-	 * @param ontName	Ontology name
-	 * @param opName	Operation name
-	 * @return Comma-separated string with the results 
+	 * @return Comma-separated string with results 
 	 */
-	private String generateCSV(String ontName, String opName) {
+	private String generateCSV() {
 		String out = ontName + "," + opName + ",";
 		for(String r : reasonerList) {
 			out += map.get(r) + ",";
@@ -560,11 +578,9 @@ public class ResultComparator {
 	
 	/**
 	 * Serialize a comma-separated file with the cluster information
-	 * @param ontName	Ontology name
-	 * @param opName	Operation name
 	 * @param clusters	List of file clusters
 	 */
-	private void serializeClusterInfo(String ontName, String opName, List<Set<File>> clusters) {
+	private void serializeClusterInfo(List<Set<File>> clusters) {
 		String out = ontName + "," + opName;
 		for(Set<File> set : clusters) {
 			out += ",";
@@ -609,11 +625,14 @@ public class ResultComparator {
 		for(int i = 2; i < args.length; i++)
 			files.add(new File(args[i]));
 
+		File f1 = files.get(0);
+		String ontName = f1.getParentFile().getName();
+		
 		String ops[] = {"sat","classification","consistency"};
 		List<String> opList = new ArrayList<String>(Arrays.asList(ops));
 		if(opList.contains(opName)) {
-			ResultComparator comp = new ResultComparator(files, outputFile);
-			boolean allSame = comp.checkResultCorrectness(opName);
+			ResultComparator comp = new ResultComparator(files, opName, outputFile, ontName);
+			boolean allSame = comp.checkResultCorrectness();
 			if(allSame)
 				System.out.println("\nAll results files are equivalent");
 			else
