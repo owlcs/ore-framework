@@ -212,6 +212,8 @@ public class ResultComparator {
 			LinkedList<File> list = new LinkedList<File>(files);
 			while(!list.isEmpty()) {
 				File f1 = list.pop();
+				clustered.add(f1);
+				
 				if(ontName == "") { ontName = f1.getParentFile().getName(); log.write(sep + "\nOntology: " + ontName); }
 				OWLOntology ont1 = loadOntology(f1);
 				if(ont1 == null)
@@ -394,7 +396,7 @@ public class ResultComparator {
 		updateMap(correct, "true");
 		updateMap(incorrect, "false");
 		if(!incorrect.isEmpty()) {
-			printSummary("  Equivalent", correct);
+			printSummary("  Equivalent (majority)", correct);
 			printSummary("  Non Equivalent", incorrect);
 		}
 		serialize(generateCSV(ontName, opName), "results.csv");
