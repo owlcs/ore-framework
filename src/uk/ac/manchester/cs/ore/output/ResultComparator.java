@@ -513,22 +513,28 @@ public class ResultComparator {
 	
 	
 	/**
-	 * Elephant's producing an invalid OWL file, missing Ontology(..) statement
+	 * Fix an ontology file that is missing (in functional syntax) the Ontology(..) statement
 	 * @param f	File to fix
 	 * @throws IOException
 	 */
 	private String fixFile(File f) throws IOException {
-		String outputString = "Ontology(\n";
+		// Prepare fixed file's output
+		String folder = f.getParentFile().getAbsolutePath();
+		if(!folder.endsWith(File.separator)) folder += File.separator;
+		String filename = f.getName() + "_fixed.owl";
+		BufferedWriter writer = initWriter(folder, filename, false);
+		writer.write("Ontology(\n");
+		
+		// Read in original file
 		BufferedReader br = new BufferedReader(new FileReader(f));
 		String line;
 		while((line = br.readLine()) != null)
-			outputString += line + "\n";
+			writer.write(line + "\n");
 		br.close();
-		outputString += ")";
-		String folder = f.getParentFile().getAbsolutePath();
-		if(!folder.endsWith(File.separator)) folder += File.separator;
-		String filename = f.getName()+"_fixed.owl";
-		serialize(outputString, folder, filename, false);
+		
+		// Finalize fixed file
+		writer.write(")");
+		writer.close();
 		return folder+filename;
 	}
 	
