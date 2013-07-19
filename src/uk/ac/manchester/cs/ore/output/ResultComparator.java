@@ -53,7 +53,7 @@ public class ResultComparator {
 		this.outputFolder = outputFolder;
 		map = new HashMap<String,String>();
 		reasonerList = getReasonerList();
-		initLogWriter();
+		log = initWriter("log.txt");
 	}
 	
 	
@@ -394,6 +394,7 @@ public class ResultComparator {
 			printSummary("  Non Equivalent", incorrect);
 		}
 		serialize(generateCSV(ontName, opName), "results.csv");
+		serializeClusterInfo(ontName, opName, clusters);
 	}
 	
 	
@@ -428,7 +429,6 @@ public class ResultComparator {
 	 * @param files	Set of files
 	 * @return Set containing the reasoner names corresponding to each file
 	 */
-	@SuppressWarnings("unused")
 	private Set<String> getReasonerNames(Set<File> files) {
 		Set<String> out = new HashSet<String>();
 		for(File f : files)
@@ -542,9 +542,8 @@ public class ResultComparator {
 	 * @param out	String to be flushed
 	 */
 	private void serialize(String out, String filename) {
-		if(!outputFolder.endsWith(File.separator)) outputFolder += File.separator;
+		BufferedWriter br = initWriter(filename);
 		try {
-			BufferedWriter br = new BufferedWriter(new FileWriter(new File(outputFolder + filename), true));
 			br.write(out + "\n");
 			br.close();
 		} catch (IOException e) {
@@ -554,15 +553,36 @@ public class ResultComparator {
 	
 	
 	/**
-	 * Initialize log output writer
+	 * Serialize a comma-separated file with the cluster information
+	 * @param ontName	Ontology name
+	 * @param opName	Operation name
+	 * @param clusters	List of file clusters
 	 */
-	private void initLogWriter() {
+	private void serializeClusterInfo(String ontName, String opName, List<Set<File>> clusters) {
+		String out = ontName + "," + opName;
+		for(Set<File> set : clusters) {
+			out += ",";
+			for(String r : getReasonerNames(set))
+				out += r + " ";
+		}
+		serialize(out, "clusters.csv");
+	}
+	
+	
+	/**
+	 * Initialize a buffered writer
+	 * @param filename	Desired filename
+	 * @return Buffered file writer
+	 */
+	private BufferedWriter initWriter(String filename) {
+		BufferedWriter out = null;
 		if(!outputFolder.endsWith(File.separator)) outputFolder += File.separator;
 		try {
-			log = new BufferedWriter(new FileWriter(new File(outputFolder + "log.txt"), true));
+			out = new BufferedWriter(new FileWriter(new File(outputFolder + filename), true));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		return out;
 	}
 	
 	
