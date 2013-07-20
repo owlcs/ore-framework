@@ -361,8 +361,7 @@ public class ResultComparator {
 			System.out.print("  " + cluster); log.write("\n  " + cluster);
 			System.out.println();
 		}
-		System.out.println("\nSummary:");
-		log.write("\n\nSummary:");
+		
 		Set<File> correct = clusters.get(index);
 		Set<File> incorrect = new HashSet<File>();
 		for(int i = 0; i<clusters.size(); i++) {
@@ -374,6 +373,8 @@ public class ResultComparator {
 		updateMap(correct, "true");
 		updateMap(incorrect, "false");
 		if(!incorrect.isEmpty()) {
+			System.out.println("\nSummary:");
+			log.write("\n\nSummary:");
 			printSummary("  Equivalent (majority)", correct);
 			printSummary("  Non Equivalent", incorrect);
 		}
