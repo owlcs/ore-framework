@@ -21,7 +21,6 @@ import java.util.StringTokenizer;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.OWLAxiom;
 import org.semanticweb.owlapi.model.OWLOntology;
-import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
 
 import uk.ac.manchester.cs.diff.axiom.LogicalDiff;
@@ -206,11 +205,10 @@ public class ResultComparator {
 	 */
 	private boolean compareEntailmentSets() throws IOException {
 		boolean allEquiv = true;
-		String ontName = "", equivalent = "   Equivalent", 
-				sep = "----------------------------------------------------";
+		String equivalent = "   Equivalent", sep = "----------------------------------------------------";
 		List<Set<File>> clusters = new ArrayList<Set<File>>();
 		Set<File> clustered = new HashSet<File>();
-		log.write(sep + "\nOntology: " + ontName); 
+		log.write(sep + "\nOntology: " + ontName);
 		
 		if(!files.isEmpty()) {
 			System.out.println("\nComparing results files...\n");
@@ -233,8 +231,11 @@ public class ResultComparator {
 								list.remove(f2);
 								clustered.add(f2);
 							}
-							else if(!(ont2.getLogicalAxiomCount()>0))
+							else if(!(ont2.getLogicalAxiomCount()>0)) {
 								map.put(getReasonerName(f2), "empty");
+								list.remove(f2);
+								clustered.add(f2);
+							}
 							else {
 								printComparisonStatement(sep, f1, f2);
 								ChangeSet cs = getDiff(ont1, ont2);
@@ -284,16 +285,16 @@ public class ResultComparator {
 	 */
 	private void logChanges(File f1, File f2, Set<OWLAxiom> rems, Set<OWLAxiom> adds) throws IOException {
 		if(!rems.isEmpty()) {
-			String s = "   " + getReasonerName(f1) + " outputs " + rems.size() + " extra entailment(s)";
-			System.out.println(s);
-			log.write(s + "\n");
+			String s = "  " + getReasonerName(f1) + " outputs " + rems.size() + " extra entailment(s)";
+			System.out.println("\n" + s);
+			log.write("\n" + s + "\n");
 			for(OWLAxiom ax : rems)
 				log.write("\n\t" + ax);
 		}
 		if(!adds.isEmpty()) {
-			String s = "   " + getReasonerName(f2) + " outputs " + adds.size() + " extra entailment(s)";
-			System.out.println(s);
-			log.write(s + "\n");
+			String s = "  " + getReasonerName(f2) + " outputs " + adds.size() + " extra entailment(s)";
+			System.out.println("\n" + s);
+			log.write("\n" + s + "\n");
 			for(OWLAxiom ax : adds)
 				log.write("\n\t" + ax);
 		}
@@ -504,7 +505,7 @@ public class ResultComparator {
 		if(getReasonerName(f).equals("elephant")) f = new File(fixFile(f));
 		try {
 			ont = man.loadOntologyFromOntologyDocument(f);
-		} catch (OWLOntologyCreationException e) {
+		} catch (Exception e) {
 			System.out.println("! Unable to parse results file of: " + getReasonerName(f) + " (" + f.getAbsolutePath() + ")");
 		}
 		return ont;
@@ -613,7 +614,7 @@ public class ResultComparator {
 	private void serializeClusterInfo(List<Set<File>> clusters) {
 		String out = ontName + "," + opName;
 		for(Set<File> set : clusters) {
-			out += ",";
+			out += set.size() + ",";
 			for(String r : getReasonerNames(set))
 				out += r + " ";
 		}

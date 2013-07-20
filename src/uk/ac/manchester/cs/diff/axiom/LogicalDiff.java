@@ -24,9 +24,11 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.semanticweb.HermiT.Reasoner;
+import org.semanticweb.owlapi.model.AxiomType;
 import org.semanticweb.owlapi.model.OWLAxiom;
 import org.semanticweb.owlapi.model.OWLEntity;
 import org.semanticweb.owlapi.model.OWLOntology;
+import org.semanticweb.owlapi.model.OWLSubClassOfAxiom;
 import org.semanticweb.owlapi.reasoner.OWLReasoner;
 
 import uk.ac.manchester.cs.diff.axiom.changeset.LogicalChangeSet;
@@ -113,12 +115,35 @@ public class LogicalDiff implements AxiomDiff {
 		
 		long end = bean.getCurrentThreadCpuTime();
 		diffTime = (end-start)/1000000000.0;
+		
+		effectualAdditions.removeAll(pruneChanges(effectualAdditions));
+		effectualRemovals.removeAll(pruneChanges(effectualRemovals));
 	
 		logicalChangeSet = new LogicalChangeSet(effectualAdditions, ineffectualAdditions, effectualRemovals, ineffectualRemovals);
 		logicalChangeSet.setDiffTime(diffTime);
 
 		if(verbose) { System.out.println("done"); printDiff(); }
 		return logicalChangeSet;
+	}
+	
+	
+	/**
+	 * Prune set of changes (for ORE)
+	 * @param axioms	Set of axioms
+	 * @return Axioms to remove
+	 */
+	public Set<OWLAxiom> pruneChanges(Set<OWLAxiom> axioms) {
+		Set<OWLAxiom> toRemove = new HashSet<OWLAxiom>();
+		for(OWLAxiom ax : axioms) {
+			if(ax.isOfType(AxiomType.RBoxAxiomTypes) || ax.isOfType(AxiomType.ABoxAxiomTypes))
+				toRemove.add(ax);
+			else if(ax.isOfType(AxiomType.SUBCLASS_OF)) {
+				if( ((OWLSubClassOfAxiom)ax).getSubClass().isBottomEntity() || 
+						((OWLSubClassOfAxiom)ax).getSuperClass().isTopEntity())
+					toRemove.add(ax);
+			}
+		}
+		return toRemove;
 	}
 	
 
