@@ -33,6 +33,7 @@ import org.semanticweb.owlapi.reasoner.OWLReasoner;
 
 import uk.ac.manchester.cs.diff.axiom.changeset.LogicalChangeSet;
 import uk.ac.manchester.cs.diff.axiom.changeset.StructuralChangeSet;
+import uk.ac.manchester.cs.diff.output.XMLReport;
 
 /**
  * @author Rafael S. Goncalves <br/>
@@ -137,6 +138,8 @@ public class LogicalDiff implements AxiomDiff {
 		for(OWLAxiom ax : axioms) {
 			if(ax.isOfType(AxiomType.RBoxAxiomTypes) || ax.isOfType(AxiomType.ABoxAxiomTypes))
 				toRemove.add(ax);
+			else if(ax.isOfType(AxiomType.EQUIVALENT_CLASSES)) 
+				toRemove.add(ax);
 			else if(ax.isOfType(AxiomType.SUBCLASS_OF)) {
 				if( ((OWLSubClassOfAxiom)ax).getSubClass().isBottomEntity() || 
 						((OWLSubClassOfAxiom)ax).getSuperClass().isTopEntity())
@@ -176,6 +179,16 @@ public class LogicalDiff implements AxiomDiff {
 				"\n\tEffectual Removals: " + logicalChangeSet.getEffectualRemovalAxioms().size() + 
 				"\n\tIneffectual Additions: " + logicalChangeSet.getIneffectualAdditionAxioms().size() +
 				"\n\tIneffectual Removals: " + logicalChangeSet.getIneffectualRemovalAxioms().size());
+	}
+	
+	
+	/**
+	 * Get an XML change report for the change set computed by this diff
+	 * @return XML change report object
+	 */
+	public XMLReport getXMLReport() {
+		if(logicalChangeSet == null) logicalChangeSet = getDiff();
+		return new XMLReport(ont1, ont2, logicalChangeSet);
 	}
 	
 	

@@ -28,6 +28,7 @@ import uk.ac.manchester.cs.diff.axiom.StructuralDiff;
 import uk.ac.manchester.cs.diff.axiom.changeset.ChangeSet;
 import uk.ac.manchester.cs.diff.axiom.changeset.LogicalChangeSet;
 import uk.ac.manchester.cs.diff.axiom.changeset.StructuralChangeSet;
+import uk.ac.manchester.cs.diff.output.XMLReport;
 
 /**
  * @author Rafael S. Goncalves <br/>
@@ -208,7 +209,7 @@ public class ResultComparator {
 		String equivalent = "   Equivalent", sep = "----------------------------------------------------";
 		List<Set<File>> clusters = new ArrayList<Set<File>>();
 		Set<File> clustered = new HashSet<File>();
-		log.write(sep + "\nOntology: " + ontName);
+		log.write("\n" + sep + "\nOntology: " + ontName);
 		
 		if(!files.isEmpty()) {
 			System.out.println("\nComparing results files...\n");
@@ -238,7 +239,7 @@ public class ResultComparator {
 							}
 							else {
 								printComparisonStatement(sep, f1, f2);
-								ChangeSet cs = getDiff(ont1, ont2);
+								ChangeSet cs = getDiff(ont1, ont2, f1, f2);
 								if(!cs.isEmpty()) {
 									Set<OWLAxiom> adds = getAdditions(cs), rems = getRemovals(cs);
 									if(rems.isEmpty() && adds.isEmpty()) {
@@ -479,18 +480,43 @@ public class ResultComparator {
 	 * @param ont2	Ontology 2
 	 * @return Change set between the two given ontologies
 	 */
-	private ChangeSet getDiff(OWLOntology ont1, OWLOntology ont2) {
+	private ChangeSet getDiff(OWLOntology ont1, OWLOntology ont2, File f1, File f2) {
 		ChangeSet changeSet = null;
+		XMLReport report = null;
+		
 		StructuralDiff sdiff = new StructuralDiff(ont1, ont2, false);
 		changeSet = sdiff.getDiff();
+		report = sdiff.getXMLReport();
+		
 		boolean structEquiv = sdiff.isEquivalent();
-
 		if(!structEquiv) {
 			LogicalDiff ldiff = new LogicalDiff(ont1, ont2, false);
 			changeSet = ldiff.getDiff();
+			report = ldiff.getXMLReport();
 		}
+		if(!changeSet.isEmpty())
+			serializeDiff(report, f1, f2);
 		return changeSet;
 	}	
+	
+	
+	/**
+	 * Serialize diff xml report
+	 * @param report	XMLReport object
+	 * @param f1	File 1
+	 * @param f2	File 2
+	 */
+	private void serializeDiff(XMLReport report, File f1, File f2) {
+		try {
+			String rep = report.getReportAsString(report.getXMLDocumentReport());
+			if(!outputFolder.endsWith(File.separator)) outputFolder+=File.separator;
+			String filename = getReasonerName(f1) + "_vs_" + getReasonerName(f2) + ".xml";
+			String folder = outputFolder + "diff_reports" + File.separator + ontName;
+			serialize(rep, folder, filename, false);
+		} catch (Exception e) {
+			System.out.println("! Unable to serialize diff report");
+		}
+	}
 	
 	
 	/**
@@ -614,7 +640,7 @@ public class ResultComparator {
 	private void serializeClusterInfo(List<Set<File>> clusters) {
 		String out = ontName + "," + opName;
 		for(Set<File> set : clusters) {
-			out += set.size() + ",";
+			out += "," + set.size() + ",";
 			for(String r : getReasonerNames(set))
 				out += r + " ";
 		}

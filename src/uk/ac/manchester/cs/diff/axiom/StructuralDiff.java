@@ -29,6 +29,7 @@ import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLSubClassOfAxiom;
 
 import uk.ac.manchester.cs.diff.axiom.changeset.StructuralChangeSet;
+import uk.ac.manchester.cs.diff.output.XMLReport;
 
 /**
  * @author Rafael S. Goncalves <br/>
@@ -133,6 +134,15 @@ public class StructuralDiff implements AxiomDiff {
 				"\n\tShared: " + changeSet.getShared().size());
 	}
 	
+	
+	/**
+	 * Get an XML change report for the change set computed by this diff
+	 * @return XML change report object
+	 */
+	public XMLReport getXMLReport() {
+		if(changeSet == null) changeSet = getDiff();
+		return new XMLReport(ont1, ont2, changeSet);
+	}
 	
 	/**
 	 * Record file names of given ontologies in the change set 
