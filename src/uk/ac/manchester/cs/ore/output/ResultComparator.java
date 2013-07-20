@@ -85,9 +85,9 @@ public class ResultComparator {
 					Set<File> f1Cluster = new HashSet<File>(Collections.singleton(f1));
 					for(File f2 : files) {
 						if(f1 != f2 && !clustered.contains(f2)) {
-							printComparisonStatement(sep, f1, f2);
 							Object o2 = loadFile(f2);
 							if(o2 != null) {
+								printComparisonStatement(sep, f1, f2);
 								if(equals(o1, o2, f1, f2)) {
 									System.out.println(equivalent); log.write(equivalent);
 									f1Cluster.add(f2);
@@ -107,6 +107,7 @@ public class ResultComparator {
 			}
 		}
 		produceOutput(clusters);
+		log.close();
 		return allEquiv;
 	}
 	
@@ -142,9 +143,10 @@ public class ResultComparator {
 			else if(!(((OWLOntology)result).getLogicalAxiomCount()>0))
 				map.put(getReasonerName(f), "empty");
 		}
-		else {
-			// TODO
-		}
+		else if(!(f.length() > 0)) // for sat and consistency just check if empty
+			map.put(getReasonerName(f), "empty");
+		else 
+			result = ""; // or return a dummy result for non-nullness' sake
 		return result;
 	}
 	
@@ -215,10 +217,9 @@ public class ResultComparator {
 				
 				if(cName1.equals(cName2) && !result1.equals(result2)) {
 					equal = false;
-					System.out.println(getComparisonStatement(f1, f2));
 					System.out.println("Concept 1: " + cName1 + "\tConcept 2: " + cName2);
 					System.out.println("Result 1: " + result1 + "\tResult 2: " + result2);
-					System.out.println("   File 1 reports " + result1 + " for " + cName1 + " while File 2 reports " + result2 + "\n");
+					System.out.println("   File 1 reports " + result1 + " for " + cName1 + " while File 2 reports " + result2);
 				}
 				
 				line1 = br1.readLine();
@@ -248,8 +249,8 @@ public class ResultComparator {
 			while(line1 != null && line2 != null) {
 				if(!line1.equals(line2)) {
 					equal = false;
-					System.out.println(getComparisonStatement(f1, f2));
-					System.out.println("   File 1 reports " + line1 + " while File 2 reports " + line2 + "\n");
+					String outSt = "   " + getReasonerName(f1) + " reports " + line1 + " while " + getReasonerName(f2) + " reports " + line2;
+					System.out.println(outSt); log.write(outSt);
 				}
 				line1 = br1.readLine();
 				line2 = br2.readLine();
@@ -276,7 +277,7 @@ public class ResultComparator {
 	private void logChanges(File f1, File f2, Set<OWLAxiom> rems, Set<OWLAxiom> adds) throws IOException {
 		if(!rems.isEmpty()) {
 			String s = "  " + getReasonerName(f1) + " outputs " + rems.size() + " extra entailment(s)";
-			System.out.println("\n" + s);
+			System.out.println(s);
 			log.write("\n" + s + "\n");
 			for(OWLAxiom ax : rems)
 				log.write("\n\t" + ax);
@@ -344,6 +345,8 @@ public class ResultComparator {
 	 */
 	public void analyseClusters(List<Set<File>> clusters) throws IOException {
 		int max = 0, index = 0;
+		System.out.println("\nResults clusters:");
+		log.write("\n\nResults clusters:");
 		for(int i = 0; i<clusters.size(); i++) {
 			Set<File> fileset = clusters.get(i);
 			if(fileset.size() > max) {
@@ -351,15 +354,15 @@ public class ResultComparator {
 				index = i;
 			}
 			String cluster = "Cluster " + (i+1) + " (size " + fileset.size() + "): ";
-			System.out.print(cluster); log.write("\n" + cluster); 
 			for(File f : fileset) {
 				String r = getReasonerName(f) + " ";
-				System.out.print(r);
 				cluster += r;
 			}
+			System.out.print("  " + cluster); log.write("\n  " + cluster);
 			System.out.println();
 		}
-
+		System.out.println("\nSummary:");
+		log.write("\n\nSummary:");
 		Set<File> correct = clusters.get(index);
 		Set<File> incorrect = new HashSet<File>();
 		for(int i = 0; i<clusters.size(); i++) {
@@ -650,8 +653,8 @@ public class ResultComparator {
 		List<String> opList = new ArrayList<String>(Arrays.asList(ops));
 		if(opList.contains(opName)) {
 			ResultComparator comp = new ResultComparator(files, opName, outputFile, ontName);
-			boolean allSame = comp.areResultsEquivalent();
-			if(allSame)
+			boolean allEquiv = comp.areResultsEquivalent();
+			if(allEquiv)
 				System.out.println("\nAll results files are equivalent");
 			else
 				System.out.println("\nNot all results files are equivalent");
