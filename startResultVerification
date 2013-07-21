@@ -6,6 +6,7 @@
 # base="/Volumes/Data/ORE"
 base="/shareddata/homes/samantha"
 ontbase="$base/ontologies"
+satbase="$ontbase/sat"
 rbase="$base/reasoners"
 # 
 # Using the script:
@@ -39,7 +40,11 @@ if [ $ELEMENTS -gt 2 ]; then
 			do
 				cmd="$cmd $rbase/$reasoner/output/$filename/$1.$ext"
 			done
-			java -Xmx8G -jar ResultChecker.jar $1 $2/$profile $cmd
+			satfile="nothing" # irrelevant for classification or consistency
+			if [ "$1" = "sat" ]; then
+				satfile="$satbase/$profile/$filename"_sat.txt
+			fi			
+			java -Xmx8G -jar ResultChecker.jar $1 $2/$profile $satfile $cmd
 			printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
 		done
 	done
