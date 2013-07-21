@@ -18,7 +18,7 @@ public class OutputHandler {
 	private double opTime, opCpuTime, externalDuration;
 	
 	/**
-	 * Constructor
+	 * Constructor: sets all times to 0
 	 */
 	public OutputHandler() {
 		opTime = 0;

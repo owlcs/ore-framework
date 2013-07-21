@@ -46,7 +46,7 @@ public class ResultComparator {
 	/**
 	 * Constructor
 	 * @param files	Set of results files
-	 * @param conceptList	Concept list file
+	 * @param conceptList	Concept list file if applicable, empty string otherwise
 	 * @param opName	Operation name
 	 * @param outputFolder	Output folder
 	 * @param ontName	Ontology filename
@@ -59,7 +59,7 @@ public class ResultComparator {
 		this.ontName = ontName;
 		map = new HashMap<String,String>();
 		reasonerList = getReasonerList();
-		log = initWriter(outputFolder,"log.txt", true);
+		log = initWriter(outputFolder, "log.txt", true);
 	}
 	
 	
@@ -88,7 +88,7 @@ public class ResultComparator {
 				System.err.println("! Inexistent or empty concept name list");
 		}
 		else  
-			allEquiv = areResultsEquivalent();
+			allEquiv = areResultsEquivalent("");
 		log.close();
 		return allEquiv;
 	}
@@ -684,8 +684,8 @@ public class ResultComparator {
 	 * @param o	Object
 	 */
 	public void cleanUp(Object o) {
-		if(o instanceof OWLOntology)
-			((OWLOntology)o).getOWLOntologyManager().removeOntology((OWLOntology)o);
+		if(o instanceof OWLOntology) ((OWLOntology)o).getOWLOntologyManager().removeOntology((OWLOntology)o);
+		o=null;
 	}
 	
 	
