@@ -109,7 +109,9 @@ public class ResultComparator {
 		Set<File> clustered = new HashSet<File>();
 		log.write("\n" + sep + "\nOntology: " + ontName);	
 		if(!files.isEmpty()) {
-			System.out.println("\nComparing results files...\n");
+			System.out.print("\nComparing results files");
+			if(!cName.equals("")) System.out.print(" for concept " + cName);
+			System.out.println("...\n");
 			LinkedList<File> list = new LinkedList<File>(files);
 			while(!list.isEmpty()) {
 				File f1 = list.pop(); clustered.add(f1);
