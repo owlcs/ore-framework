@@ -107,7 +107,7 @@ public class ResultComparator {
 		String equivalent = "   Equivalent", sep = "----------------------------------------------------";
 		List<Set<File>> clusters = new ArrayList<Set<File>>();
 		Set<File> clustered = new HashSet<File>();
-		log.write("\n" + sep + "\nOntology: " + ontName);	
+		printIntro(cName, sep);
 		if(!files.isEmpty()) {
 			System.out.print("\nComparing results files");
 			if(!cName.equals("")) System.out.print(" for concept " + cName);
@@ -131,17 +131,23 @@ public class ResultComparator {
 								}
 								else
 									allEquiv = false;
-								System.out.println(sep);
+								System.out.println(sep); log.write("\n" + sep);
 								cleanUp(o2);
 							}
+							else
+								map.put(getReasonerName(f2),"nofile");
 						}
 					}
 					clusters.add(f1Cluster);
 					cleanUp(o1);
 				}
+				else
+					map.put(getReasonerName(f1),"nofile");
 			}
 		}
 		produceOutput(clusters, cName);
+		System.out.println("\nDone");
+		log.write("\nDone\n");
 		return allEquiv;
 	}
 	
@@ -414,7 +420,7 @@ public class ResultComparator {
 			System.out.print("  " + cluster); log.write("\n  " + cluster);
 			System.out.println();
 		}
-		
+		log.write("\n");
 		Set<File> correct = clusters.get(index);
 		Set<File> incorrect = new HashSet<File>();
 		for(int i = 0; i<clusters.size(); i++) {
@@ -427,9 +433,9 @@ public class ResultComparator {
 		updateMap(incorrect, "false");
 		if(!incorrect.isEmpty()) {
 			System.out.println("\nSummary:");
-			log.write("\n\nSummary:");
-			printSummary("  Equivalent (majority)", correct);
-			printSummary("  Non Equivalent", incorrect);
+			log.write("\nSummary:");
+			printSummary("Equivalent (majority)", correct);
+			printSummary("Non Equivalent", incorrect);
 		}
 	}
 	
@@ -613,7 +619,7 @@ public class ResultComparator {
 	 */
 	private void printComparisonStatement(String sep, File f1, File f2) throws IOException {
 		String st = getComparisonStatement(f1, f2);
-		System.out.println(st); log.write("\n" + sep + "\n" + st + "\n");
+		System.out.println(st); log.write("\n" + st + "\n");
 	}
 	
 	
@@ -686,6 +692,22 @@ public class ResultComparator {
 	public void cleanUp(Object o) {
 		if(o instanceof OWLOntology) ((OWLOntology)o).getOWLOntologyManager().removeOntology((OWLOntology)o);
 		o=null;
+	}
+	
+	
+	/**
+	 * Print introductory messages
+	 * @param cName	Concept name
+	 * @param sep	Separator
+	 * @throws IOException
+	 */
+	private void printIntro(String cName, String sep) throws IOException {
+		log.write("\n" + sep + "\nOntology: " + ontName);
+		System.out.println("\n" + sep + "\nOntology: " + ontName);
+		if(!cName.equals("")) {
+			String out = "Concept: " + cName;
+			log.write("\n" + out + "\n" + sep); System.out.println(out+"\n"+sep);
+		}
 	}
 	
 	
