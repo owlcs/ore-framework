@@ -1,0 +1,56 @@
+#!/bin/bash
+# 
+# OWL Reasoner Evaluation Workshop (ORE) 2013
+# Last updated: 20-Jul-13
+# 
+# base="/Volumes/Data/ORE"
+base="/shareddata/homes/samantha"
+ontbase="$base/ontologies"
+satbase="$ontbase/sat"
+rbase="$base/reasoners"
+# 
+# Using the script:
+#
+# sh startResultVerification <Operation> <OntologyFile> <Output> <Profile>
+#
+# 	<Operation>		One of: sat | classification | consistency
+# 	<OntologyFile>	Absolute ontology file path
+#	<Output>		Output folder
+# 	<Profile>		Ontology's profile
+# 
+declare -a reasoners=(basevisor chainsaw elephant elk-loading-counted elk-loading-not-counted fact hermit jcel jfact konclude more-hermit more-pellet snorocket treasoner trowl wsclassifier)		
+args=("$@") 
+ELEMENTS=${#args[@]}
+if [ $ELEMENTS -gt 2 ]; then
+	ext=""
+	if [ "$1" = "classification" ]; then
+		ext="owl"
+	else
+		ext="csv"
+	fi	
+	filename=`basename $2`
+	echo "Ontology: $filename"
+	echo "Ontology filepath: $2"
+	echo "Operation: $1"
+	echo "Output folder: $3"
+	cmd=""
+	for reasoner in ${reasoners[@]}
+	do
+		cmd="$cmd $rbase/$reasoner/output/$filename/$1.$ext"
+	done
+	satfile="nothing" # irrelevant for classification or consistency
+	if [ "$1" = "sat" ]; then
+		satfile="$satbase/$4/$filename"_sat.txt
+	fi			
+	java -Xmx8G -jar ResultChecker.jar $1 $2 $satfile $cmd
+	printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
+else
+	echo "! Insufficient or no parameters given"
+	echo ""
+	echo "Usage:	sh startResultVerification <Operation> <Output> <Profiles>"
+	echo "	<Operation>		One of: sat | classification | consistency"
+	echo "	<OntologyFile>	Absolute ontology file path"
+	echo "	<Output>		Output folder"
+	echo "	<Profile>		Ontology's profile"
+	echo ""
+fi
