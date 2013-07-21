@@ -39,20 +39,21 @@ import uk.ac.manchester.cs.diff.output.XMLReport;
 public class ResultComparator {
 	private List<File> files;
 	private List<String> reasonerList;
-	private String outputFolder;
 	private BufferedWriter log;
 	private Map<String,String> map;
-	private String ontName, opName;
+	private String ontName, opName, outputFolder, conceptList;
 	
 	/**
 	 * Constructor
 	 * @param files	Set of results files
+	 * @param conceptList	Concept list file
 	 * @param opName	Operation name
 	 * @param outputFolder	Output folder
 	 * @param ontName	Ontology filename
 	 */
-	public ResultComparator(List<File> files, String opName, String outputFolder, String ontName) {
+	public ResultComparator(List<File> files, String conceptList, String opName, String outputFolder, String ontName) {
 		this.files = files;
+		this.conceptList = conceptList;
 		this.opName = opName;
 		this.outputFolder = outputFolder;
 		this.ontName = ontName;
@@ -63,12 +64,45 @@ public class ResultComparator {
 	
 	
 	/**
-	 * Determines whether all given files are equivalent
+	 * Determines whether all given files or individual sat results are equivalent
+	 * @return true if all files are equivalent, false otherwise
+	 * @throws IOException
+	 */
+	public boolean areResultsEquivalent() throws IOException {
+		boolean allEquiv = true;
+		verifyFiles();
+		if(opName.equalsIgnoreCase("sat")) {
+			File f = new File(conceptList);
+			if(f.exists() && f.length()>0) {
+				BufferedReader br = new BufferedReader(new FileReader(conceptList));
+				String cName = br.readLine();
+				while(cName != null) {
+					cName = cName.trim();
+					boolean equiv = areResultsEquivalent(cName);
+					if(!equiv) allEquiv = false;
+					cName = br.readLine();
+				}
+				br.close();
+			}
+			else
+				System.err.println("! Inexistent or empty concept name list");
+		}
+		else  
+			allEquiv = areResultsEquivalent();
+		log.close();
+		return allEquiv;
+	}
+	
+	
+	/**
+	 * Determines whether all given files or individual sat results are equivalent
+	 * @param o1	1st SAT result if applicable, otherwise ignored
+	 * @param o2	2nd SAT result if applicable, otherwise ignored
+	 * @param cName	Concept name of SAT test if applicable, otherwise ignored
 	 * @return true if all files are equivalent, false otherwise
 	 * @throws IOException 
 	 */
-	public boolean areResultsEquivalent() throws IOException {
-		verifyFiles();
+	public boolean areResultsEquivalent(String cName) throws IOException {
 		boolean allEquiv = true;
 		String equivalent = "   Equivalent", sep = "----------------------------------------------------";
 		List<Set<File>> clusters = new ArrayList<Set<File>>();
@@ -78,17 +112,16 @@ public class ResultComparator {
 			System.out.println("\nComparing results files...\n");
 			LinkedList<File> list = new LinkedList<File>(files);
 			while(!list.isEmpty()) {
-				File f1 = list.pop();
-				clustered.add(f1);
-				Object o1 = loadFile(f1);
+				File f1 = list.pop(); clustered.add(f1);
+				Object o1 = loadFile(f1, cName);
 				if(o1 != null) {
 					Set<File> f1Cluster = new HashSet<File>(Collections.singleton(f1));
 					for(File f2 : files) {
 						if(f1 != f2 && !clustered.contains(f2)) {
-							Object o2 = loadFile(f2);
+							Object o2 = loadFile(f2, cName);
 							if(o2 != null) {
 								printComparisonStatement(sep, f1, f2);
-								if(equals(o1, o2, f1, f2)) {
+								if(equals(o1, o2, f1, f2, cName)) {
 									System.out.println(equivalent); log.write(equivalent);
 									f1Cluster.add(f2);
 									list.remove(f2);
@@ -106,8 +139,7 @@ public class ResultComparator {
 				}
 			}
 		}
-		produceOutput(clusters);
-		log.close();
+		produceOutput(clusters, cName);
 		return allEquiv;
 	}
 	
@@ -134,7 +166,7 @@ public class ResultComparator {
 	 * @return Object representing the given file
 	 * @throws IOException
 	 */
-	public Object loadFile(File f) throws IOException {
+	public Object loadFile(File f, String cName) throws IOException {
 		Object result = null;
 		if(opName.equals("classification")) {
 			result = loadOntology(f);
@@ -143,8 +175,11 @@ public class ResultComparator {
 			else if(!(((OWLOntology)result).getLogicalAxiomCount()>0))
 				map.put(getReasonerName(f), "empty");
 		}
-		else if(!(f.length() > 0)) // for sat and consistency just check if empty
+		else if(!(f.length() > 0))
 			map.put(getReasonerName(f), "empty");
+		else if(opName.equalsIgnoreCase("sat")) {
+			result = loadSatResult(f, cName);
+		}
 		else 
 			result = ""; // or return a dummy result for non-nullness' sake
 		return result;
@@ -160,12 +195,12 @@ public class ResultComparator {
 	 * @return true if files are equivalent, false otherwise
 	 * @throws IOException
 	 */
-	public boolean equals(Object o1, Object o2, File f1, File f2) throws IOException {
+	public boolean equals(Object o1, Object o2, File f1, File f2, String cName) throws IOException {
 		boolean equals = true;
 		if(opName.equalsIgnoreCase("classification"))
 			equals = equivalentEntailmentSets(o1, o2, f1, f2);
 		else if(opName.equalsIgnoreCase("sat")) 
-			equals = equalSatResults(f1, f2);
+			equals = equalResult((String)o1, (String)o2, f1, f2, cName);
 		else if(opName.equalsIgnoreCase("consistency"))
 			equals = equalConsistencyResults(f1, f2);
 		return equals;
@@ -199,39 +234,37 @@ public class ResultComparator {
 	
 	
 	/**
-	 * Compare sat results files
-	 * @param f1	File 1
-	 * @param f2	File 2
+	 * Get the result in the given file for the specifed concept name  
+	 * @param f	File
+	 * @param cName	Concept name
 	 * @return true if both files report the same results for all sat tests
 	 */
-	private boolean equalSatResults(File f1, File f2) {
-		boolean equal = true;
+	private String loadSatResult(File f, String cName) {
+		String out = "";
 		try {
-			BufferedReader br1 = new BufferedReader(new FileReader(f1)), br2 = new BufferedReader(new FileReader(f2));
-			String line1 = br1.readLine(), line2 = br2.readLine();
-			while(line1 != null && line2 != null) {
-				StringTokenizer tokenizer1 = new StringTokenizer(line1, ","), tokenizer2 = new StringTokenizer(line2, ",");
-				
-				String cName1 = tokenizer1.nextToken(), cName2 = tokenizer2.nextToken();
-				String result1 = tokenizer1.nextToken(), result2 = tokenizer2.nextToken();
-				
-				if(cName1.equals(cName2) && !result1.equals(result2)) {
-					equal = false;
-					System.out.println("Concept 1: " + cName1 + "\tConcept 2: " + cName2);
-					System.out.println("Result 1: " + result1 + "\tResult 2: " + result2);
-					System.out.println("   File 1 reports " + result1 + " for " + cName1 + " while File 2 reports " + result2);
+			BufferedReader br1 = new BufferedReader(new FileReader(f));
+			String line1 = br1.readLine();
+			while(line1 != null) {
+				StringTokenizer tokenizer1 = new StringTokenizer(line1, ",");
+				String cName1 = tokenizer1.nextToken();
+				String result1 = tokenizer1.nextToken();
+				if(cName1.equals(cName)) {
+					out = result1;
+					break;
 				}
-				
 				line1 = br1.readLine();
-				line2 = br2.readLine();
 			}
-			br1.close(); br2.close();
+			br1.close();
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		return equal;
+		if(out.equals("")) {
+			System.err.println("! Reasoner " + getReasonerName(f) + " has no result for concept name " + cName);
+			return null;
+		}
+		return out;
 	}
 	
 	
@@ -247,11 +280,7 @@ public class ResultComparator {
 			BufferedReader br1 = new BufferedReader(new FileReader(f1)), br2 = new BufferedReader(new FileReader(f2));
 			String line1 = br1.readLine(), line2 = br2.readLine();
 			while(line1 != null && line2 != null) {
-				if(!line1.equals(line2)) {
-					equal = false;
-					String outSt = "   " + getReasonerName(f1) + " reports " + line1 + " while " + getReasonerName(f2) + " reports " + line2;
-					System.out.println(outSt); log.write(outSt);
-				}
+				equal = equalResult(line1, line2, f1, f2, "");
 				line1 = br1.readLine();
 				line2 = br2.readLine();
 			}
@@ -263,6 +292,28 @@ public class ResultComparator {
 			e.printStackTrace();
 		}
 		return equal;
+	}
+	
+	
+	/**
+	 * Checks whether two strings representing reasoner results are equal
+	 * @param s1	1st string
+	 * @param s2	2nd string
+	 * @param f1	File 1
+	 * @param f2	File 2
+	 * @return true if string are the same, false otherwise
+	 * @throws IOException
+	 */
+	private boolean equalResult(String s1, String s2, File f1, File f2, String conceptName) throws IOException {
+		boolean equals = true;
+		if(!s1.equalsIgnoreCase(s2)) {
+			equals = false;
+			if(!conceptName.equals(""))
+				System.out.println("   Concept: " + conceptName);
+			String outSt = "     " + getReasonerName(f1) + " reports " + s1 + " while " + getReasonerName(f2) + " reports " + s2;
+			System.out.println(outSt); log.write(outSt);
+		}
+		return equals;
 	}
 	
 	
@@ -327,14 +378,14 @@ public class ResultComparator {
 	 * @param clusters	List of file clusters
 	 * @throws IOException
 	 */
-	private void produceOutput(List<Set<File>> clusters) throws IOException {
+	private void produceOutput(List<Set<File>> clusters, String cName) throws IOException {
 		if(!clusters.isEmpty())
 			analyseClusters(clusters);
 		else
 			System.out.println("No reasoner produced a (valid) result file");
 		
-		serializeClusterInfo(clusters);
-		serialize(generateCSV(), outputFolder, "results.csv", true);
+		serializeClusterInfo(clusters, cName);
+		serialize(generateCSV(cName), outputFolder, "results.csv", true);
 	}
 	
 	
@@ -396,8 +447,10 @@ public class ResultComparator {
 	 * Generate a comma-separated row with the results in the map
 	 * @return Comma-separated string with results 
 	 */
-	private String generateCSV() {
+	private String generateCSV(String cName) {
 		String out = ontName + "," + opName + ",";
+		if(!cName.equals(""))
+			out += cName + ",";
 		for(String r : reasonerList) {
 			out += map.get(r) + ",";
 		}
@@ -592,8 +645,10 @@ public class ResultComparator {
 	 * Serialize a comma-separated file with the cluster information
 	 * @param clusters	List of file clusters
 	 */
-	public void serializeClusterInfo(List<Set<File>> clusters) {
+	public void serializeClusterInfo(List<Set<File>> clusters, String cName) {
 		String out = ontName + "," + opName;
+		if(!cName.equals(""))
+			out += "," + cName;
 		for(Set<File> set : clusters) {
 			out += "," + set.size() + ",";
 			for(String r : getReasonerNames(set))
@@ -636,15 +691,17 @@ public class ResultComparator {
 	 * Main
 	 * @param 0	Operation name
 	 * @param 1	Output folder
-	 * @param 1..n	Results files
+	 * @param 2 Concept list for SAT tests
+	 * @param 3..n	Results files
 	 * @throws IOException 
 	 */
 	public static void main(String[] args) throws IOException {
 		String opName = args[0];
 		String outputFile = args[1];
+		String satFile = args[2];
 		
 		List<File> files = new ArrayList<File>();
-		for(int i = 2; i < args.length; i++)
+		for(int i = 3; i < args.length; i++)
 			files.add(new File(args[i]));
 
 		File f1 = files.get(0);
@@ -653,7 +710,7 @@ public class ResultComparator {
 		String ops[] = {"sat","classification","consistency"};
 		List<String> opList = new ArrayList<String>(Arrays.asList(ops));
 		if(opList.contains(opName)) {
-			ResultComparator comp = new ResultComparator(files, opName, outputFile, ontName);
+			ResultComparator comp = new ResultComparator(files, satFile, opName, outputFile, ontName);
 			boolean allEquiv = comp.areResultsEquivalent();
 			if(allEquiv)
 				System.out.println("\nAll results files are equivalent");
