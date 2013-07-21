@@ -314,6 +314,7 @@ public class ResultComparator {
 	 */
 	private boolean equalResult(String s1, String s2, File f1, File f2, String conceptName) throws IOException {
 		boolean equals = true;
+		s1 = s1.trim(); s2 = s2.trim();
 		if(!s1.equalsIgnoreCase(s2)) {
 			equals = false;
 			if(!conceptName.equals(""))

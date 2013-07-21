@@ -42,7 +42,7 @@ if [ $ELEMENTS -gt 2 ]; then
 	if [ "$1" = "sat" ]; then
 		satfile="$satbase/$4/$filename"_sat.txt
 	fi			
-	java -Xmx8G -jar ResultChecker.jar $1 $2 $satfile $cmd
+	java -Xmx8G -jar ResultChecker.jar $1 $3 $satfile $cmd
 	printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
 else
 	echo "! Insufficient or no parameters given"
