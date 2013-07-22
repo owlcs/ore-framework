@@ -1,7 +1,7 @@
 #!/bin/bash
 # 
 # OWL Reasoner Evaluation Workshop (ORE) 2013
-# Last updated: 15-Jul-13
+# Last updated: 22-Jul-13
 # 
 # base="/Volumes/Data/ORE"
 base="/shareddata/homes/samantha"
