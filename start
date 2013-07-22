@@ -1,38 +1,41 @@
 #!/bin/bash
 # 
 # OWL Reasoner Evaluation Workshop (ORE) 2013
-# Reasoner Competition Benchmark Script v1.5
-# Last updated: 15-Jul-13
+# Reasoner Competition Benchmark Script v1.6
+# Last updated: 22-Jul-13
 # 
-# Base folder(s): reasoner, ontologies, and runner scripts (change these appropriately)
+# The framework relies on the folder structure described below, for ease of use regarding triggering operations
+#
+# The "base" folder should contain the folders (1) /reasoners, (2) /runner and (3) /csv.
+# (1) contains reasoner folders, each of which with an execReasoner script to trigger that reasoner
+# (2) contains the framework's necessary scripts and jars
+# (3) where the output csv files with reasoner results (timings, errors & timeouts) are serialised to
 # 
 # base="/Volumes/Data/ORE"
 base="/shareddata/homes/samantha"
 rbase="$base/reasoners"
 runbase="$base/runner"
-csvdir="$base/csv/test"
+csvdir="$base/csv/live"
 lib="-Djava.library.path=$runbase/lib"
 # 
 # Using the script:
 #
-# sh start <Operation> <OntPath> <Output> <Reasoner> (<ConceptURI>)
+# sh start <Operation> <OntologyFile> <Output> <Reasoner> (<ConceptURI>)
 #
 # 	<Operation>		One of: sat | classification | consistency
 # 	<OntologyFile>	Absolute ontology file path
-#	<Output>		Output folder path
+#	<Output>		Output folder name (within reasoner folder)
 # 	<Reasoner>		Reasoner folder name (rooted at rbase above) which should contain an 'execReasoner' script
 # 	<ConceptURI>	Full concept URI, as declared in the ontology
-#
-# ORE-2013 reasoners: basevisor, elephant, elk, fact, hermit, jcel, jfact, konclude, 
-# more-hermit, more-pellet, snorocket, treasoner, trowl, wsclassifier
 # 
-# To start with, print the parameters back as they are parsed
+# To start with, print the given parameters back
 # 
 if [ $# -gt 1 ]; then
 	echo "Starting benchmark"
 	echo "   $# parameters given"
 	echo "	Operation: $1"
 	echo "	Ontology Filepath: $2"
+	echo "	Output folder name: $3 (full path: $rbase/$4/$3)"
     echo "	Reasoner: $4"
 	if [ $# -gt 4 ]; then
 		if [ "$1" = "sat" ]; then
@@ -52,6 +55,7 @@ if [ $# -gt 1 ]; then
 	# 1) Given (ontology and/or query) files exist
 	# 2) Operation is one of the specified ones
 	# 3) Concept exists in the ontology signature
+	# 4) Output folder is writable
 	# 
 	echo "   Verifying parameters"
 	chk=$(java $lib -jar $runbase/InputVerifier.jar $1 $2 $out $5)
@@ -85,7 +89,9 @@ if [ $# -gt 1 ]; then
 		echo "$output" > "$log"
 		echo "   Finished. Total wall clock duration: $duration second(s)"
 		# 		
-		# Handle output
+		# Handle output: Parse the reasoner log and extract operation times, timeout, and
+		# retrieve a portion of the error message if there is one in the error file. 
+		# The output is saved to the base "csvdir"
 		# 
 		echo "   Verifying output..."
 		cd "$runbase" && java $lib -jar OutputHandler.jar $log $1 $2 $out $csvdir/$4 $5
@@ -97,12 +103,11 @@ if [ $# -gt 1 ]; then
 else
 	echo "! Insufficient or no parameters given"
 	echo ""
-	echo "Usage:	sh start <Operation> <OntPath> <Output> <Reasoner> (<ConceptURI> | <QueryFile>)"
-	echo "	<Operation>	One of: sat | classification | consistency | query"
-	echo "	<OntologyFile>	Ontology file path"
-	echo "	<Output>	Output file path"
+	echo "Usage:	sh start <Operation> <OntPath> <Output> <Reasoner> (<ConceptURI>)"
+	echo "	<Operation>	One of: sat | classification | consistency"
+	echo "	<OntologyFile>	Absolute ontology file path"
+	echo "	<Output>	Output folder name (within reasoner folder)"
 	echo "	<Reasoner>	Reasoner folder name (rooted at rbase) which should contain an 'execReasoner' script"
 	echo "	<ConceptURI>	Concept URI, as declared in the ontology"
-	echo "	<QueryFile>	Absolute query file path"
 	echo ""
 fi

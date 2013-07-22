@@ -52,8 +52,8 @@ else
 	echo "! Insufficient or no parameters given"
 	echo ""
 	echo "Usage:	sh startResultVerification <Operation> <Output> <Profiles>"
-	echo "	<Operation>		One of: sat | classification | consistency"
-	echo "	<Output>		Output folder"
-	echo "	<Profiles>		Profiles to be tested, any of: dl | el | rl (space separated)"
+	echo "	<Operation>	One of: sat | classification | consistency"
+	echo "	<Output>	Output folder"
+	echo "	<Profiles>	Profiles to be tested, any of: dl | el | rl (space separated)"
 	echo ""
 fi

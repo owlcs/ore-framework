@@ -11,7 +11,7 @@ satbase="$ontbase/sat"
 # 
 # Using the script:
 #
-# sh startReasonerTest <Operation> <Reasoner> <Output> <Profiles>
+# sh startReasonerTest <Operation> <Output> <Reasoner> <Profiles>
 #
 # 	<Operation>		One of: sat | classification | consistency
 #	<Output>		Output folder (within the reasoner folder)
@@ -45,11 +45,11 @@ if [ $ELEMENTS -gt 4 ]; then
 else
 	echo "! Insufficient or no parameters given"
 	echo ""
-	echo "Usage:	sh startReasonerTest <Operation> <Reasoner> <Profiles>"
-	echo "	<Operation>		One of: sat | classification | consistency"
-	echo "	<Output>		Output folder (within the reasoner folder)"
-	echo "	<Reasoner>		Reasoner folder name"
-	echo "	<Syntax>		One of: functional | owlxml"
-	echo "	<Profiles>		Profiles to be tested, any of: dl | el | rl (space separated)"
+	echo "Usage:	sh startReasonerTest <Operation> <Output> <Reasoner> <Profiles>"
+	echo "	<Operation>	One of: sat | classification | consistency"
+	echo "	<Output>	Output folder (within the reasoner folder)"
+	echo "	<Reasoner>	Reasoner folder name"
+	echo "	<Syntax>	One of: functional | owlxml"
+	echo "	<Profiles>	Profiles to be tested, any of: dl | el | rl (space separated)"
 	echo ""
 fi
