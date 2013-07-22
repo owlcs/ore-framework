@@ -6,6 +6,7 @@
 # base="/Volumes/Data/ORE"
 base="/shareddata/homes/samantha"
 ontbase="$base/ontologies"
+runbase="$base/runner"
 satbase="$ontbase/sat"
 # 
 # Using the script:
@@ -31,11 +32,11 @@ if [ $ELEMENTS -gt 4 ]; then
 				if [ "$1" = "sat" ]; then
 					filename=`basename $file`
 					while read class; do 
-					    ./start $1 $file $2 $3 $class
+					    $runbase/start $1 $file $2 $3 $class
 						printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
 					done < "$satbase/$profile/$filename"_sat.txt
 				else
-					./start $1 $file $2 $3
+					$runbase/start $1 $file $2 $3
 					printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
 				fi
 			done

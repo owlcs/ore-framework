@@ -17,7 +17,7 @@ rbase="$base/reasoners"
 #	<Output>		Output folder
 # 	<Profiles>		Profiles to be tested, any of: dl | el | rl (space separated)
 # 
-declare -a reasoners=(basevisor chainsaw elephant elk-loading-counted elk-loading-not-counted fact hermit jcel jfact konclude more-hermit more-pellet snorocket treasoner trowl wsclassifier)		
+declare -a reasoners=(basevisor chainsaw elephant elk-loading-counted elk-loading-not-counted fact hermit jcel jfact konclude more-hermit more-pellet snorocket treasoner trowl wsclassifier)
 args=("$@") 
 ELEMENTS=${#args[@]}
 if [ $ELEMENTS -gt 2 ]; then

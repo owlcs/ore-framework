@@ -10,6 +10,8 @@
 base="/shareddata/homes/samantha"
 rbase="$base/reasoners"
 runbase="$base/runner"
+csvdir="$base/csv/test"
+lib="-Djava.library.path=$runbase/lib"
 # 
 # Using the script:
 #
@@ -52,16 +54,16 @@ if [ $# -gt 1 ]; then
 	# 3) Concept exists in the ontology signature
 	# 
 	echo "   Verifying parameters"
-	chk=$(java -jar InputVerifier.jar $1 $2 $out $5)
+	chk=$(java $lib -jar $runbase/InputVerifier.jar $1 $2 $out $5)
 	if [ "$chk" = "Valid parameters" ]; then
 		echo "      Parameters are valid"
 		#
 		# Restrict system resources
-		# Max memory: 9GB
-		# Max time: 10 minutes cpu time
+		# Max memory: 10GB
+		# Max time: 5 minutes cpu time
 		#
-		ulimit -v 9961472
-		ulimit -t 600
+		ulimit -v 10485760
+		ulimit -t 350
 		# 
 		# Execute reasoner with given parameters. Once the operation
 		# is completed, the wall clock time difference is printed
@@ -86,7 +88,7 @@ if [ $# -gt 1 ]; then
 		# Handle output
 		# 
 		echo "   Verifying output..."
-		cd "$runbase" && java -jar OutputHandler.jar $log $1 $2 $out $5
+		cd "$runbase" && java $lib -jar OutputHandler.jar $log $1 $2 $out $csvdir/$4 $5
 		echo "   Finished"
 	else
 		echo "$chk"

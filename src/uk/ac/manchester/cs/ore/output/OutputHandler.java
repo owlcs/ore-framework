@@ -70,15 +70,18 @@ public class OutputHandler {
 	public String parseErrorFile(File errorFile) throws IOException {
 		BufferedReader reader = new BufferedReader(new FileReader(errorFile));
 		String output = "";
-		String line = reader.readLine().trim();
-		if(line.equalsIgnoreCase("timeout"))
-			output += "timeout";
-		else {
-			while(line != null && output.length()<5000) {
-				line = line.trim();
-				line = line.replaceAll(",", ";");
-				output += line + " ";
-				line = reader.readLine();
+		String line = reader.readLine();
+		if(line!=null) {
+			line = line.trim();
+			if(line.equalsIgnoreCase("timeout"))
+				output += "timeout";
+			else {
+				while(line != null && output.length()<5000) {
+					line = line.trim();
+					line = line.replaceAll(",", ";");
+					output += line + " ";
+					line = reader.readLine();
+				}
 			}
 		}
 		reader.close();
@@ -110,7 +113,8 @@ public class OutputHandler {
 	 * @param 1: operation name
 	 * @param 2: ontology name
 	 * @param 3: error file
-	 * @param 4: concept uri
+	 * @param 4: output directory
+	 * @param 5: concept uri
 	 * @throws IOException 
 	 */
 	public static void main(String[] args) throws IOException {
@@ -130,8 +134,8 @@ public class OutputHandler {
 		String opName = args[1];
 	
 		// Concept uri
-		if(args.length > 4) {
-			String conceptUri = args[4];
+		if(args.length > 5) {
+			String conceptUri = args[5];
 			row += conceptUri + ",";
 		}
 		
@@ -145,7 +149,8 @@ public class OutputHandler {
 		else if(handler.getOpTime() == 0 && handler.getOpCpuTime() == 0) 
 			row += "timeout,";
 		
-		File outputDir = f.getParentFile().getParentFile();
+		File outputDir = new File(args[4]);
+		outputDir.mkdirs();
 		String outFile = outputDir.getAbsolutePath();
 		if(!outFile.endsWith(File.separator)) outFile += File.separator;
 		outFile += "_" + opName + ".csv";
