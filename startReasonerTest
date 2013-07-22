@@ -18,9 +18,6 @@ satbase="$ontbase/sat"
 # 	<Reasoner>		Reasoner folder name (rooted at rbase above) which should contain an 'execReasoner' script
 #	<Syntax>		One of: functional | owlxml
 # 	<Profiles>		Profiles to be tested, any of: dl | el | rl (space separated)
-#
-# ORE-2013 reasoners: basevisor, elephant, elk, fact, hermit, jcel, jfact, konclude, 
-# more-hermit, more-pellet, snorocket, treasoner, trowl, wsclassifier
 # 
 args=("$@") 
 ELEMENTS=${#args[@]}

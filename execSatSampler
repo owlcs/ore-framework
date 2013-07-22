@@ -1,34 +1,34 @@
 #!/bin/bash
 # 
 # OWL Reasoner Evaluation Workshop (ORE) 2013
-# Last updated: 13-Jul-13
+# Last updated: 22-Jul-13
 # 
-# Base folder(s) for ontologies and runners (change these appropriately)
-# 
-base="/Users/rafa/Documents/PhD/ORE"
-ontbase="$base/corpus"
+# base="/Volumes/Data/ORE"
+base="/shareddata/homes/samantha"
+ontbase="$base/ontologies"
 runbase="$base/runner"
+#
 sampleSize="10"
-set="set_a"
+setfolder="set_a"
 mem="24G"
 #
 # Process DL ontologies
 #
-for f in $ontbase/$set/dl/*
+for f in $ontbase/$setfolder/dl/*
 do
 	java -Xmx"$mem" -DentityExpansionLimit=100000000 -jar $runbase/SATSampler.jar $f $ontbase/sat/ $sampleSize
 done
 #
 # Process EL ontologies
 #
-for f in $ontbase/$set/el/*
+for f in $ontbase/$setfolder/el/*
 do
 	java -Xmx"$mem" -DentityExpansionLimit=100000000 -jar $runbase/SATSampler.jar $f $ontbase/sat/ $sampleSize
 done
 #
 # Process RL ontologies
 #
-for f in $ontbase/$set/rl/*
+for f in $ontbase/$setfolder/rl/*
 do
 	java -Xmx"$mem" -DentityExpansionLimit=100000000 -jar $runbase/SATSampler.jar $f $ontbase/sat/ $sampleSize
 done
