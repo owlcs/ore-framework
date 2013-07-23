@@ -75,6 +75,10 @@ public class OutputHandler {
 			line = line.trim();
 			if(line.equalsIgnoreCase("timeout"))
 				output += "timeout";
+			else if(line.toLowerCase().contains("inconsistentontology") || line.toLowerCase().contains("stopping konclude")
+					|| line.toLowerCase().contains("expressionsplitter")) {
+				output += "";
+			}
 			else {
 				while(line != null && output.length()<5000) {
 					line = line.trim();

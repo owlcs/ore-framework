@@ -93,7 +93,7 @@ if [ $# -gt 1 ]; then
 		# retrieve a portion of the error message if there is one in the error file. 
 		# 
 		echo "   Verifying output..."
-		cd "$runbase" && java $lib -jar OutputHandler.jar $log $1 $2 $out $5 $6
+		cd "$runbase" && java $lib -jar OutputHandler.jar $log $1 $2 $out $5/$4 $6
 		echo "   Finished"
 	else
 		echo "$chk"
@@ -107,7 +107,7 @@ else
 	echo "	<OntologyFile>	Absolute ontology file path"
 	echo "	<Output>	Output folder name (within reasoner folder)"
 	echo "	<Reasoner>	Reasoner folder name (rooted at rbase) which should contain an 'execReasoner' script"
-	echo "	<CSVOutput>	Folder where the csv result file should be serialised to 
+	echo "	<CSVOutput>	Folder where the csv result file should be serialised to"
 	echo "	<ConceptURI>	Concept URI, as declared in the ontology"
 	echo ""
 fi
