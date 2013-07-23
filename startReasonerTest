@@ -8,6 +8,7 @@ base="/shareddata/homes/samantha"
 ontbase="$base/ontologies"
 runbase="$base/runner"
 satbase="$ontbase/sat"
+csvdir="$base/csv/live"
 # 
 # Using the script:
 #
@@ -29,11 +30,11 @@ if [ $ELEMENTS -gt 4 ]; then
 				if [ "$1" = "sat" ]; then
 					filename=`basename $file`
 					while read class; do 
-					    $runbase/start $1 $file $2 $3 $class
+					    $runbase/start $1 $file $2 $3 $csvdir/$profile $class
 						printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
 					done < "$satbase/$profile/$filename"_sat.txt
 				else
-					$runbase/start $1 $file $2 $3
+					$runbase/start $1 $file $2 $3 $csvdir/$profile
 					printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
 				fi
 			done

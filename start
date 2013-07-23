@@ -15,17 +15,17 @@
 base="/shareddata/homes/samantha"
 rbase="$base/reasoners"
 runbase="$base/runner"
-csvdir="$base/csv/live"
 lib="-Djava.library.path=$runbase/lib"
 # 
 # Using the script:
 #
-# sh start <Operation> <OntologyFile> <Output> <Reasoner> (<ConceptURI>)
+# sh start <Operation> <OntologyFile> <Output> <Reasoner> <CSVOutput> (<ConceptURI>)
 #
 # 	<Operation>		One of: sat | classification | consistency
 # 	<OntologyFile>	Absolute ontology file path
 #	<Output>		Output folder name (within reasoner folder)
 # 	<Reasoner>		Reasoner folder name (rooted at rbase above) which should contain an 'execReasoner' script
+#	<CSVOutput>		Folder where the csv result file should be serialised to 
 # 	<ConceptURI>	Full concept URI, as declared in the ontology
 # 
 # To start with, print the given parameters back
@@ -37,9 +37,9 @@ if [ $# -gt 1 ]; then
 	echo "	Ontology Filepath: $2"
 	echo "	Output folder name: $3 (full path: $rbase/$4/$3)"
     echo "	Reasoner: $4"
-	if [ $# -gt 4 ]; then
+	if [ $# -gt 5 ]; then
 		if [ "$1" = "sat" ]; then
-			echo "	Concept URI: $5"
+			echo "	Concept URI: $6"
 		fi
 	fi
 	ontname=`basename $2`
@@ -58,7 +58,7 @@ if [ $# -gt 1 ]; then
 	# 4) Output folder is writable
 	# 
 	echo "   Verifying parameters"
-	chk=$(java $lib -jar $runbase/InputVerifier.jar $1 $2 $out $5)
+	chk=$(java $lib -jar $runbase/InputVerifier.jar $1 $2 $out $6)
 	if [ "$chk" = "Valid parameters" ]; then
 		echo "      Parameters are valid"
 		#
@@ -75,7 +75,7 @@ if [ $# -gt 1 ]; then
 		echo "   Executing reasoner..."
 		cd "$rbase/$4"
 		start_time=$(date +%s)
-		rout=$(./execReasoner $1 $2 $out $5)
+		rout=$(./execReasoner $1 $2 $out $6)
 		end_time=$(date +%s)
 		duration=$(( $end_time - $start_time ))
 		output="$rout"$'\n\t'"Duration: $duration"
@@ -91,10 +91,9 @@ if [ $# -gt 1 ]; then
 		# 		
 		# Handle output: Parse the reasoner log and extract operation times, timeout, and
 		# retrieve a portion of the error message if there is one in the error file. 
-		# The output is saved to the base "csvdir"
 		# 
 		echo "   Verifying output..."
-		cd "$runbase" && java $lib -jar OutputHandler.jar $log $1 $2 $out $csvdir/$4 $5
+		cd "$runbase" && java $lib -jar OutputHandler.jar $log $1 $2 $out $5 $6
 		echo "   Finished"
 	else
 		echo "$chk"
@@ -108,6 +107,7 @@ else
 	echo "	<OntologyFile>	Absolute ontology file path"
 	echo "	<Output>	Output folder name (within reasoner folder)"
 	echo "	<Reasoner>	Reasoner folder name (rooted at rbase) which should contain an 'execReasoner' script"
+	echo "	<CSVOutput>	Folder where the csv result file should be serialised to 
 	echo "	<ConceptURI>	Concept URI, as declared in the ontology"
 	echo ""
 fi
