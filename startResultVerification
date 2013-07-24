@@ -3,11 +3,12 @@
 # OWL Reasoner Evaluation Workshop (ORE) 2013
 # Last updated: 22-Jul-13
 # 
-# base="/Volumes/Data/ORE"
 base="/shareddata/homes/samantha"
 ontbase="$base/ontologies"
 satbase="$ontbase/sat"
 rbase="$base/reasoners"
+# ontbase="$base/corpora/user-set"
+# rbase="$base/resultdata/biokb/reasoner_output"
 # 
 # Using the script:
 #
@@ -44,7 +45,7 @@ if [ $ELEMENTS -gt 2 ]; then
 			if [ "$1" = "sat" ]; then
 				satfile="$satbase/$profile/$filename"_sat.txt
 			fi			
-			java -Xmx8G -jar ResultChecker.jar $1 $2/$profile $satfile $cmd
+			java -Xmx10G -jar ResultChecker.jar $1 $2/$profile $satfile $cmd
 			printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
 		done
 	done

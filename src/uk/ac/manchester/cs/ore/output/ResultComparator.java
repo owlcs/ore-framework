@@ -176,15 +176,17 @@ public class ResultComparator {
 	 */
 	public Object loadFile(File f, String cName) throws IOException {
 		Object result = null;
-		if(opName.equals("classification")) {
+		if(!(f.length() > 0))
+			map.put(getReasonerName(f), "empty");
+		else if(opName.equalsIgnoreCase("classification")) {
 			result = loadOntology(f);
 			if(result == null)
 				map.put(getReasonerName(f), "unparseable");
-			else if(!(((OWLOntology)result).getLogicalAxiomCount()>0))
+			else if(!(((OWLOntology)result).getLogicalAxiomCount()>0)) {
 				map.put(getReasonerName(f), "empty");
+				result = null;
+			}
 		}
-		else if(!(f.length() > 0))
-			map.put(getReasonerName(f), "empty");
 		else if(opName.equalsIgnoreCase("sat")) {
 			result = loadSatResult(f, cName);
 		}
