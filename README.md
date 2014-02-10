@@ -35,7 +35,7 @@ The shell scripts to execute the various tests that were part of the ORE 2013 re
 * **execReasoner**: starts off the reasoner (to be provided by each system submission, though an example one is included)
 * **execExamples**: performs a test run of a reasoner on the example ontology supplied
 
-All of these components were tested in Mac OS X (v10.8.5) and Fedora, running (respectively) Oracle Java v1.7 and v1.6, and Apache Ant 1.8.2.
+All of these components were tested in Mac OS X v10.8.5 (Mountain Lion) and Fedora v11 (Leonidas), running Oracle Java v1.7 and OpenJDK v1.6, and Apache Ant v1.8.2 and v1.7.1, respectively. The 2013 competition was ran on a cluster of machines running the mentioned Fedora release.
 
 
 usage
