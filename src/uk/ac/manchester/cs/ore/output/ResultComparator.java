@@ -245,6 +245,7 @@ public class ResultComparator {
 				equiv = true;
 			else {
 				equiv = false;
+				// TODO: Verify justifications for the axioms in the diff against non-entailing reasoner...?
 				logChanges(f1, f2, adds, rems);
 			}
 		}
@@ -445,6 +446,8 @@ public class ResultComparator {
 			log.write("\nSummary:");
 			printSummary("Equivalent (majority)", correct);
 			printSummary("Non Equivalent", incorrect);
+
+			// TODO: Is it a draw!? If so output that to a separate file to be further investigated	
 		}
 	}
 	
@@ -553,7 +556,7 @@ public class ResultComparator {
 	private OWLOntology loadOntology(File f) throws IOException {
 		OWLOntologyManager man = OWLManager.createOWLOntologyManager();
 		OWLOntology ont = null;
-//		if(getReasonerName(f).equals("elephant")) f = new File(fixFile(f));
+		if(getReasonerName(f).equals("elephant")) f = new File(fixFile(f));
 		try {
 			ont = man.loadOntologyFromOntologyDocument(f);
 		} catch (Exception e) {
@@ -569,7 +572,6 @@ public class ResultComparator {
 	 * @param f	File to fix
 	 * @throws IOException
 	 */
-	@SuppressWarnings("unused")
 	private String fixFile(File f) throws IOException {
 		// Prepare fixed file's output
 		String folder = f.getParentFile().getAbsolutePath();

@@ -18,8 +18,6 @@
  ******************************************************************************/
 package uk.ac.manchester.cs.diff.axiom;
 
-import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadMXBean;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -39,37 +37,19 @@ import uk.ac.manchester.cs.diff.output.XMLReport;
  */
 public class StructuralDiff implements AxiomDiff {
 	private OWLOntology ont1, ont2;
-	private String ont1name, ont2name;
 	private StructuralChangeSet changeSet;
-	private ThreadMXBean bean;
-	private double diffTime;
 	private boolean verbose;
 	
 	/**
 	 * Constructor
 	 * @param ont1	Ontology 1
 	 * @param ont2	Ontology 2
+	 * @param verbose	true if all output messages should be printed, false otherwise
 	 */
 	public StructuralDiff(OWLOntology ont1, OWLOntology ont2, boolean verbose) {
 		this.ont1 = ont1;
 		this.ont2 = ont2;
 		this.verbose = verbose;
-		bean = ManagementFactory.getThreadMXBean();
-	}
-	
-	
-	/**
-	 * Constructor 2
-	 * @param ont1	Ontology 1
-	 * @param ont2	Ontology 2
-	 */
-	public StructuralDiff(OWLOntology ont1, OWLOntology ont2, String ont1name, String ont2name, boolean verbose) {
-		this.ont1 = ont1;
-		this.ont2 = ont2;
-		this.ont1name = ont1name;
-		this.ont2name = ont2name;
-		this.verbose = verbose;
-		bean = ManagementFactory.getThreadMXBean();
 	}
 	
 	
@@ -77,7 +57,6 @@ public class StructuralDiff implements AxiomDiff {
 	 * Get structural changes between ontologies
 	 * @return Structural change set
 	 */
-	@SuppressWarnings("deprecation")
 	public StructuralChangeSet getDiff() {
 		if(changeSet != null) return changeSet;
 		
@@ -89,7 +68,6 @@ public class StructuralDiff implements AxiomDiff {
 		Set<OWLAxiom> removals = new HashSet<OWLAxiom>();
 		Set<OWLAxiom> shared = new HashSet<OWLAxiom>();
 		
-		long start = bean.getCurrentThreadCpuTime();
 		for(OWLAxiom ax : o1axs) {
 			if(!o2axs.contains(ax)) {
 				if(ax instanceof OWLSubClassOfAxiom) {
@@ -112,11 +90,7 @@ public class StructuralDiff implements AxiomDiff {
 			else shared.add(ax);
 		}
 		
-		long end = bean.getCurrentThreadCpuTime();
-		diffTime = (end-start)/1000000000.0;
-
 		changeSet = new StructuralChangeSet(additions, removals, shared);
-		addOntologyFileNames(); changeSet.setDiffTime(diffTime);
 		
 		if(verbose) { System.out.println("done"); printDiff(); }
 		return changeSet;
@@ -127,7 +101,6 @@ public class StructuralDiff implements AxiomDiff {
 	 * Print diff results
 	 */
 	public void printDiff() {
-		System.out.println("   Structural diff time: " + diffTime + " seconds");
 		System.out.println("   Structural changes:" + 
 				"\n\tAdditions: " + changeSet.getAddedAxioms().size() +
 				"\n\tRemovals: " + changeSet.getRemovedAxioms().size() + 
@@ -144,18 +117,6 @@ public class StructuralDiff implements AxiomDiff {
 		return new XMLReport(ont1, ont2, changeSet);
 	}
 	
-	/**
-	 * Record file names of given ontologies in the change set 
-	 */
-	@SuppressWarnings("deprecation")
-	private void addOntologyFileNames() {
-		if(ont1name == null) changeSet.setOntologyName(1, "Ont1");
-		else changeSet.setOntologyName(1, ont1name);
-		
-		if(ont2name == null) changeSet.setOntologyName(2, "Ont2");
-		else changeSet.setOntologyName(2, ont2name);
-	}
-	
 	
 	/**
 	 * Determine if ontologies are structurally equivalent (thus logically equivalent)
@@ -166,14 +127,5 @@ public class StructuralDiff implements AxiomDiff {
 		
 		if(changeSet.isEmpty()) return true;
 		else return false;
-	}
-	
-	
-	/**
-	 * Get the time to compute the diff
-	 * @return Diff time (in seconds)
-	 */
-	public double getDiffTime() {
-		return diffTime;
 	}
 }

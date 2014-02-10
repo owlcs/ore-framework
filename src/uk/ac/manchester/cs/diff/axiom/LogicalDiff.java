@@ -18,8 +18,6 @@
  ******************************************************************************/
 package uk.ac.manchester.cs.diff.axiom;
 
-import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadMXBean;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -46,20 +44,18 @@ public class LogicalDiff implements AxiomDiff {
 	private StructuralChangeSet structChangeSet;
 	private LogicalChangeSet logicalChangeSet;
 	private OWLReasoner ont1reasoner, ont2reasoner;
-	private ThreadMXBean bean;
-	private double diffTime;
 	private boolean verbose;
 	
 	/**
 	 * Constructor
 	 * @param ont1	Ontology 1
 	 * @param ont2	Ontology 2
+	 * @param verbose	true if all output messages should be printed, false otherwise
 	 */
 	public LogicalDiff(OWLOntology ont1, OWLOntology ont2, boolean verbose) {
 		this.ont1 = ont1;
 		this.ont2 = ont2;
 		this.verbose = verbose;
-		bean = ManagementFactory.getThreadMXBean();
 	}
 	
 	
@@ -68,13 +64,13 @@ public class LogicalDiff implements AxiomDiff {
 	 * @param ont1	Ontology 1
 	 * @param ont2	Ontology 2
 	 * @param changeSet	Structural change set
+	 * @param verbose	true if all output messages should be printed, false otherwise
 	 */
 	public LogicalDiff(OWLOntology ont1, OWLOntology ont2, StructuralChangeSet changeSet, boolean verbose) {
 		this.ont1 = ont1;
 		this.ont2 = ont2;
 		this.structChangeSet = changeSet;
 		this.verbose = verbose;
-		bean = ManagementFactory.getThreadMXBean();
 	}
 
 	
@@ -95,7 +91,6 @@ public class LogicalDiff implements AxiomDiff {
 	 * Get logical changes between ontologies
 	 * @return Logical change set
 	 */
-	@SuppressWarnings("deprecation")
 	public LogicalChangeSet getDiff() {
 		if(logicalChangeSet != null) return logicalChangeSet;
 		if(structChangeSet == null) structChangeSet = new StructuralDiff(ont1, ont2, verbose).getDiff();
@@ -104,7 +99,6 @@ public class LogicalDiff implements AxiomDiff {
 		if(ont2reasoner == null) ont2reasoner = new Reasoner(ont2);
 		
 		if(verbose) System.out.print("Computing logical diff... ");
-		long start = bean.getCurrentThreadCpuTime();
 		
 		Set<OWLAxiom> ineffectualAdditions = getIneffectualChanges(structChangeSet.getAddedAxioms(), ont1reasoner);
 		Set<OWLAxiom> effectualAdditions = new HashSet<OWLAxiom>(structChangeSet.getAddedAxioms());
@@ -114,14 +108,10 @@ public class LogicalDiff implements AxiomDiff {
 		Set<OWLAxiom> effectualRemovals = new HashSet<OWLAxiom>(structChangeSet.getRemovedAxioms());
 		effectualRemovals.removeAll(ineffectualRemovals);
 		
-		long end = bean.getCurrentThreadCpuTime();
-		diffTime = (end-start)/1000000000.0;
-		
 		effectualAdditions.removeAll(pruneChanges(effectualAdditions));
 		effectualRemovals.removeAll(pruneChanges(effectualRemovals));
 	
 		logicalChangeSet = new LogicalChangeSet(effectualAdditions, ineffectualAdditions, effectualRemovals, ineffectualRemovals);
-		logicalChangeSet.setDiffTime(diffTime);
 
 		if(verbose) { System.out.println("done"); printDiff(); }
 		return logicalChangeSet;
@@ -138,8 +128,16 @@ public class LogicalDiff implements AxiomDiff {
 		for(OWLAxiom ax : axioms) {
 			if(ax.isOfType(AxiomType.RBoxAxiomTypes) || ax.isOfType(AxiomType.ABoxAxiomTypes))
 				toRemove.add(ax);
-			else if(ax.isOfType(AxiomType.EQUIVALENT_CLASSES)) 
-				toRemove.add(ax);
+			
+			/* 
+			 * On 20 July the commented lines below were introduced. They didn't exist before. 
+			 * For live competition only!? More investigation needed...
+			 */
+//			else if(ax.isOfType(AxiomType.EQUIVALENT_CLASSES)) 
+//				toRemove.add(ax);
+			
+			// TODO: deal with equivalences vs dual subsumptions
+			
 			else if(ax.isOfType(AxiomType.SUBCLASS_OF)) {
 				if( ((OWLSubClassOfAxiom)ax).getSubClass().isBottomEntity() || 
 						((OWLSubClassOfAxiom)ax).getSuperClass().isTopEntity())
@@ -173,7 +171,6 @@ public class LogicalDiff implements AxiomDiff {
 	 * Print diff results
 	 */
 	public void printDiff() {
-		System.out.println("   Logical diff time: " + diffTime + " seconds");
 		System.out.println("   Logical changes:" + 
 				"\n\tEffectual Additions: " + logicalChangeSet.getEffectualAdditionAxioms().size() +
 				"\n\tEffectual Removals: " + logicalChangeSet.getEffectualRemovalAxioms().size() + 
@@ -214,14 +211,5 @@ public class LogicalDiff implements AxiomDiff {
 			return structChangeSet;
 		else
 			return new StructuralDiff(ont1, ont2, verbose).getDiff();
-	}
-	
-	
-	/**
-	 * Get the time to compute the diff
-	 * @return Diff time (in seconds)
-	 */
-	public double getDiffTime() {
-		return diffTime;
 	}
 }
