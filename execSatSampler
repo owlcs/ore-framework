@@ -3,32 +3,33 @@
 # OWL Reasoner Evaluation Workshop (ORE) 2013
 # Last updated: 22-Jul-13
 # 
-# base="/Volumes/Data/ORE"
-base="/shareddata/homes/samantha"
+# This script will extract a random sample (of the specified size) of concept names from *all* ontologies
+#
+base="/Volumes/Data/ORE"
 ontbase="$base/ontologies"
 runbase="$base/runner"
 #
 sampleSize="10"
-setfolder="set_a"
+syntax="owlxml" # somewhat redundant since the OWL API handles both, but such is the folder structure...
 mem="24G"
 #
 # Process DL ontologies
 #
-for f in $ontbase/$setfolder/dl/*
+for f in $ontbase/$syntax/dl/*
 do
 	java -Xmx"$mem" -DentityExpansionLimit=100000000 -jar $runbase/SATSampler.jar $f $ontbase/sat/ $sampleSize
 done
 #
 # Process EL ontologies
 #
-for f in $ontbase/$setfolder/el/*
+for f in $ontbase/$syntax/el/*
 do
 	java -Xmx"$mem" -DentityExpansionLimit=100000000 -jar $runbase/SATSampler.jar $f $ontbase/sat/ $sampleSize
 done
 #
 # Process RL ontologies
 #
-for f in $ontbase/$setfolder/rl/*
+for f in $ontbase/$syntax/rl/*
 do
 	java -Xmx"$mem" -DentityExpansionLimit=100000000 -jar $runbase/SATSampler.jar $f $ontbase/sat/ $sampleSize
 done

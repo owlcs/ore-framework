@@ -3,18 +3,17 @@
 # OWL Reasoner Evaluation Workshop (ORE) 2013
 # Last updated: 20-Jul-13
 # 
-# base="/Volumes/Data/ORE"
-base="/shareddata/homes/samantha"
+base="/Users/rafa/Documents/PhD/workspace/ore-framework/test/base"
 ontbase="$base/ontologies"
 satbase="$ontbase/sat"
 rbase="$base/reasoners"
 # 
 # Using the script:
 #
-# sh startResultVerification <Operation> <OntologyFile> <Output> <Profile>
+# sh startResultVerification <Operation> <Ontology> <Output> <Profile>
 #
 # 	<Operation>		One of: sat | classification | consistency
-# 	<OntologyFile>	Absolute ontology file path
+# 	<Ontology>	Absolute ontology file path
 #	<Output>		Output folder (absolute path)
 # 	<Profile>		Ontology's profile
 # 
@@ -47,9 +46,9 @@ if [ $ELEMENTS -gt 2 ]; then
 else
 	echo "! Insufficient or no parameters given"
 	echo ""
-	echo "Usage:	sh startResultVerification <Operation> <OntologyFile> <Output> <Profile>"
+	echo "Usage:	sh startResultVerification <Operation> <Ontology> <Output> <Profile>"
 	echo "	<Operation>		One of: sat | classification | consistency"
-	echo "	<OntologyFile>	Absolute ontology file path"
+	echo "	<Ontology>		Absolute ontology file path"
 	echo "	<Output>		Output folder (absolute path)"
 	echo "	<Profile>		Ontology's profile"
 	echo ""

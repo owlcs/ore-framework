@@ -3,12 +3,10 @@
 # OWL Reasoner Evaluation Workshop (ORE) 2013
 # Last updated: 22-Jul-13
 # 
-base="/shareddata/homes/samantha"
+base="/Users/rafa/Documents/PhD/workspace/ore-framework/test/base"
 ontbase="$base/ontologies"
-satbase="$ontbase/sat"
 rbase="$base/reasoners"
-# ontbase="$base/corpora/user-set"
-# rbase="$base/resultdata/biokb/reasoner_output"
+satbase="$ontbase/sat"
 # 
 # Using the script:
 #

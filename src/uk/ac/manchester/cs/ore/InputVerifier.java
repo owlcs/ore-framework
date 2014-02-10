@@ -19,6 +19,11 @@ import org.semanticweb.owlapi.util.VersionInfo;
  * Information Management Group (IMG) <br/>
  * School of Computer Science <br/>
  * University of Manchester <br/>
+ * <p>
+ * Basic input validation: checks whether (a) the given operation is one of the accepted ones, (b) the ontology is 
+ * parseable using the OWL API, (c) the mentioned concept name exists in the signature of the specified ontology, and
+ * (d) the output file is writable  
+ * </p>
  */
 public class InputVerifier {
 	private OWLOntology ont;
@@ -105,10 +110,12 @@ public class InputVerifier {
 	
 	/**
 	 * Main
-	 * @param 0: operation name
-	 * @param 1: ontology file path
-	 * @param 2: output file path
-	 * @param 3: [where applicable] concept URI or query file path
+	 * 
+	 * Parameter list (index positions):
+	 * 0	Operation name
+	 * 1	Ontology file path
+	 * 2	Output file path
+	 * 3	[where applicable] concept URI or query file path
 	 */
 	public static void main(String[] args) {
 		if(args.length < 3) {

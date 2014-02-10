@@ -21,6 +21,9 @@ import org.semanticweb.owlapi.model.OWLOntologyManager;
  * Information Management Group (IMG) <br/>
  * School of Computer Science <br/>
  * University of Manchester <br/>
+ * <p>
+ * This can be used to randomly sample a specified number of concept names from the given ontology
+ * </p>
  */
 public class ConceptSampler {
 	private OWLOntology ont;
@@ -82,9 +85,11 @@ public class ConceptSampler {
 	
 	/**
 	 * Main
-	 * @param 0	Ontology file path
-	 * @param 1	Root folder for sat samples
-	 * @param 2	Sample size
+	 * 
+	 * Parameter list (index positions):
+	 * 0	Ontology file path
+	 * 1	Root folder for sat samples
+	 * 2	Sample size
 	 * @throws OWLOntologyCreationException 
 	 */
 	public static void main(String[] args) throws OWLOntologyCreationException {

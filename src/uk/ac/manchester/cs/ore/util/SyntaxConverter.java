@@ -16,14 +16,19 @@ import org.semanticweb.owlapi.model.OWLOntologyStorageException;
  * Information Management Group (IMG) <br/>
  * School of Computer Science <br/>
  * University of Manchester <br/>
+ * <p>
+ * Simple syntax converter restricted to Functional and OWL/XML syntaxes.
+ * </p>
  */
 public class SyntaxConverter {
 
 	/**
 	 * Main
-	 * @param 0: syntax, one of: functional | owlxml
-	 * @param 1: output folder
-	 * @param 2: ontology file(s)
+	 * 
+	 * Parameter list (index positions):
+	 * 0	Syntax, one of: functional | owlxml
+	 * 1	Output folder
+	 * 2	Ontology file(s)
 	 */
 	public static void main(String[] args) {
 		String syntax = args[0];

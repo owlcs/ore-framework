@@ -35,6 +35,14 @@ import uk.ac.manchester.cs.diff.output.XMLReport;
  * Information Management Group (IMG) <br/>
  * School of Computer Science <br/>
  * University of Manchester <br/>
+ * <p>
+ * Comparator of reasoner results, tuned for classification, consistency and satisfiability results only.
+ * The general intuition is that the most agreed-upon result is the "right" one. It relies on a diff that checks
+ * for logical equivalence of entailment sets, and is tuned to ignore role hierarchies as only HermiT does it (right).
+ * <br/><br/>
+ * The relevant diff code is included in the project; it is an alteration of the code for the <b>ecco</b> diff to
+ * account for the kinds of axioms ignored (in particular note the ORE-specific method <b>pruneChanges</b>).
+ * </p>
  */
 public class ResultComparator {
 	private List<File> files;
@@ -73,7 +81,7 @@ public class ResultComparator {
 		verifyFiles();
 		if(opName.equalsIgnoreCase("sat")) {
 			File f = new File(conceptList);
-			if(f.exists() && f.length()>0) {
+			if(f.exists() && f.length()>0) { 
 				BufferedReader br = new BufferedReader(new FileReader(conceptList));
 				String cName = br.readLine();
 				while(cName != null) {
@@ -96,8 +104,6 @@ public class ResultComparator {
 	
 	/**
 	 * Determines whether all given files or individual sat results are equivalent
-	 * @param o1	1st SAT result if applicable, otherwise ignored
-	 * @param o2	2nd SAT result if applicable, otherwise ignored
 	 * @param cName	Concept name of SAT test if applicable, otherwise ignored
 	 * @return true if all files are equivalent, false otherwise
 	 * @throws IOException 
@@ -163,6 +169,10 @@ public class ResultComparator {
 				map.put(getReasonerName(f),"nofile");
 				toRemove.add(f);
 			}
+			if(!(f.length() > 0)) {
+				map.put(getReasonerName(f),"empty");
+				toRemove.add(f);
+			}
 		}
 		files.removeAll(toRemove);
 	}
@@ -182,7 +192,7 @@ public class ResultComparator {
 			result = loadOntology(f);
 			if(result == null)
 				map.put(getReasonerName(f), "unparseable");
-			else if(!(((OWLOntology)result).getLogicalAxiomCount()>0)) {
+			else if(((OWLOntology)result).getLogicalAxiomCount() == 0) {
 				map.put(getReasonerName(f), "empty");
 				result = null;
 			}
@@ -341,15 +351,11 @@ public class ResultComparator {
 			String s = "  " + getReasonerName(f1) + " outputs " + rems.size() + " extra entailment(s)";
 			System.out.println(s);
 			log.write("\n" + s + "\n");
-			for(OWLAxiom ax : rems)
-				log.write("\n\t" + ax);
 		}
 		if(!adds.isEmpty()) {
 			String s = "  " + getReasonerName(f2) + " outputs " + adds.size() + " extra entailment(s)";
 			System.out.println("\n" + s);
 			log.write("\n" + s + "\n");
-			for(OWLAxiom ax : adds)
-				log.write("\n\t" + ax);
 		}
 	}
 	
@@ -547,7 +553,7 @@ public class ResultComparator {
 	private OWLOntology loadOntology(File f) throws IOException {
 		OWLOntologyManager man = OWLManager.createOWLOntologyManager();
 		OWLOntology ont = null;
-		if(getReasonerName(f).equals("elephant")) f = new File(fixFile(f));
+//		if(getReasonerName(f).equals("elephant")) f = new File(fixFile(f));
 		try {
 			ont = man.loadOntologyFromOntologyDocument(f);
 		} catch (Exception e) {
@@ -563,6 +569,7 @@ public class ResultComparator {
 	 * @param f	File to fix
 	 * @throws IOException
 	 */
+	@SuppressWarnings("unused")
 	private String fixFile(File f) throws IOException {
 		// Prepare fixed file's output
 		String folder = f.getParentFile().getAbsolutePath();
@@ -716,10 +723,12 @@ public class ResultComparator {
 	
 	/**
 	 * Main
-	 * @param 0	Operation name
-	 * @param 1	Output folder
-	 * @param 2 Concept list for SAT tests
-	 * @param 3..n	Results files
+	 * 
+	 * Parameter list (index positions):
+	 * 0	Operation name
+	 * 1	Output folder
+	 * 2	Concept list for SAT tests
+	 * 3..n	Results files
 	 * @throws IOException 
 	 */
 	public static void main(String[] args) throws IOException {

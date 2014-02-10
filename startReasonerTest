@@ -3,8 +3,9 @@
 # OWL Reasoner Evaluation Workshop (ORE) 2013
 # Last updated: 22-Jul-13
 # 
-# base="/Volumes/Data/ORE"
-base="/shareddata/homes/samantha"
+# This script will benchmark the specified reasoner on *all* ontologies of all given profiles w.r.t. one operation
+#
+base="/Users/rafa/Documents/PhD/workspace/ore-framework/test/base"
 ontbase="$base/ontologies"
 runbase="$base/runner"
 satbase="$ontbase/sat"

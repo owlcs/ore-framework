@@ -1,33 +1,37 @@
-<project default="jar">
-    <property name="lib" location="lib"/>
+<project default="build">
     <property name="runner" value="uk.ac.manchester.cs.ore.sampler.ConceptSampler"/>
+    <property name="lib" location="lib"/>
     <property name="build" value="build"/>
     <property name="src" location="src"/>
+    <property name="doc" location="${build}/javadoc"/>
 
-    <path id="project.class.path">
+    <path id="classpath">
         <fileset dir="lib">
             <include name="**/*.jar"/>
         </fileset>
     </path>
 
+	<target name="build" depends="jar, javadoc"/>
+
+    <!-- Clean -->
     <target name="clean" description="Cleaning up build files...">
         <delete dir="${build}"/>
     </target>
 
+    <!-- Compile -->
     <target name="compile" description="Compile source files" depends="clean">
         <mkdir dir="${build}"/>
         <javac srcdir="${src}" destdir="${build}" debug="yes" deprecation="yes" includeantruntime="false">
-            <classpath refid="project.class.path"/>
+            <classpath refid="classpath"/>
         </javac>
-
         <copy todir="${build}">
             <fileset dir="${src}">
                 <exclude name="**/*.java"/>
             </fileset>
         </copy>
-
     </target>
 
+	<!-- Create JAR -->
     <target name="jar" depends="compile">
         <pathconvert dirsep="/" pathsep=" " property="Class-Path">
             <map from="${lib}/" to="./lib/"/>
@@ -38,7 +42,6 @@
                 </fileset>
             </path>
         </pathconvert>
-
         <jar jarfile="SATSampler.jar" basedir="${build}">
             <manifest>
                 <attribute name="Class-Path" value="${Class-Path}"/>
@@ -47,4 +50,13 @@
         </jar>
     </target>
 
+	<!-- Generate Javadoc -->
+    <target name="javadoc" description="Generate documentation">
+        <javadoc packagenames="src" sourcepath="${src}" destdir="${doc}" nodeprecatedlist="yes" nodeprecated="yes">
+            <fileset dir="${src}">
+                <include name="**"/>
+            </fileset>
+            <classpath refid="classpath"/>
+        </javadoc>
+    </target>
 </project>

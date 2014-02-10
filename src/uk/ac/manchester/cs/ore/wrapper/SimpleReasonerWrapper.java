@@ -30,7 +30,8 @@ import uk.ac.manchester.cs.jfact.JFactFactory;
  * School of Computer Science <br/>
  * University of Manchester <br/>
  * <p>
- * A simple OWL API based reasoner wrapper (using the JFact reasoner), that supports classification, satisfiability and consistency checking.
+ * A simple OWL API based reasoner wrapper (using the JFact reasoner), that supports classification, 
+ * satisfiability and consistency checking.
  * </p>
  */
 public class SimpleReasonerWrapper {
@@ -140,8 +141,7 @@ public class SimpleReasonerWrapper {
 	 * Serialize classifiation results as an OWL file
 	 * @param results	Set of inferred subsumptions
 	 * @param man	OWL Ontology Manager
-	 * @param ontDir	Ontology directory
-	 * @param reasonerName	Reasoner name
+	 * @param outFile	Output filepath
 	 * @return The file path to where the OWL file was saved
 	 */
 	@SuppressWarnings("unchecked")

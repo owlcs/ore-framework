@@ -11,21 +11,20 @@
 # (2) contains the framework's necessary scripts and jars
 # (3) where the output csv files with reasoner results (timings, errors & timeouts) are serialised to
 # 
-# base="/Volumes/Data/ORE"
-base="/shareddata/homes/samantha"
+base="/Users/rafa/Documents/PhD/workspace/ore-framework/test/base"
 rbase="$base/reasoners"
 runbase="$base/runner"
 lib="-Djava.library.path=$runbase/lib"
 # 
 # Using the script:
 #
-# sh start <Operation> <OntologyFile> <Output> <Reasoner> <CSVOutput> (<ConceptURI>)
+# sh start <Operation> <Ontology> <Output> <Reasoner> <CSVOutput> (<ConceptURI>)
 #
 # 	<Operation>		One of: sat | classification | consistency
-# 	<OntologyFile>	Absolute ontology file path
+# 	<Ontology>		Absolute ontology file path
 #	<Output>		Output folder name (within reasoner folder)
 # 	<Reasoner>		Reasoner folder name (rooted at rbase above) which should contain an 'execReasoner' script
-#	<CSVOutput>		Folder where the csv result file should be serialised to 
+#	<CSVOutput>		Folder where the csv result file should be serialised to (absolute path)
 # 	<ConceptURI>	Full concept URI, as declared in the ontology
 # 
 # To start with, print the given parameters back
@@ -104,7 +103,7 @@ else
 	echo ""
 	echo "Usage:	sh start <Operation> <OntPath> <Output> <Reasoner> (<ConceptURI>)"
 	echo "	<Operation>	One of: sat | classification | consistency"
-	echo "	<OntologyFile>	Absolute ontology file path"
+	echo "	<Ontology>	Absolute ontology file path"
 	echo "	<Output>	Output folder name (within reasoner folder)"
 	echo "	<Reasoner>	Reasoner folder name (rooted at rbase) which should contain an 'execReasoner' script"
 	echo "	<CSVOutput>	Folder where the csv result file should be serialised to"

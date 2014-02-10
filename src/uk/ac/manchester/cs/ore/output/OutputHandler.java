@@ -13,12 +13,16 @@ import java.util.StringTokenizer;
  * Information Management Group (IMG) <br/>
  * School of Computer Science <br/>
  * University of Manchester <br/>
+ * <p>
+ * Handles the (log) output of reasoners, specifically the operation time, the external duration as recorded
+ * by the shell script, errors (if applicable), and the operation CPU time if the reasoner outputs this value 
+ * </p>
  */
 public class OutputHandler {
 	private double opTime, opCpuTime, externalDuration;
 	
 	/**
-	 * Constructor: sets all times to 0
+	 * Constructor
 	 */
 	public OutputHandler() {
 		opTime = 0;
@@ -113,12 +117,14 @@ public class OutputHandler {
 	
 	/**
 	 * Main
-	 * @param 0: reasoner output (log)
-	 * @param 1: operation name
-	 * @param 2: ontology name
-	 * @param 3: error file
-	 * @param 4: output directory
-	 * @param 5: concept uri
+	 * 
+	 * Parameter list (index positions):
+	 * 0	Reasoner output (log)
+	 * 1	Operation name
+	 * 2	Ontology name
+	 * 3	Error file
+	 * 4	Output directory
+	 * 5	Concept URI
 	 * @throws IOException 
 	 */
 	public static void main(String[] args) throws IOException {

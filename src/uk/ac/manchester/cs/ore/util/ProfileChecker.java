@@ -21,6 +21,9 @@ import org.semanticweb.owlapi.profiles.OWL2RLProfile;
  * Information Management Group (IMG) <br/>
  * School of Computer Science <br/>
  * University of Manchester <br/>
+ * <p>
+ * OWL 2 profile checker: checks whether the given ontology is in the EL, RL, QL or DL profile. It ignores missing term declarations.
+ * </p>
  */
 public class ProfileChecker {
 	private OWLOntology ont;
@@ -94,7 +97,9 @@ public class ProfileChecker {
 	
 	/**
 	 * Main
-	 * @param 0: ontology filepath
+	 * 
+	 * Parameter list (index positions):
+	 * 0	Ontology filepath
 	 */
 	public static void main(String[] args) {
 		File f = new File(args[0]);
