@@ -3,5 +3,4 @@ build/*
 bin/*
 test/*
 /*.jar
-.classpath
 .DS_Store
